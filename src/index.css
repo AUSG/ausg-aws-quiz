@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+
+/* Tailwind v4는 설정 파일이 없다. 디자인 토큰은 전부 여기서 정의한다. */
+@theme {
+  --color-aws-navy: #232f3e;
+  --color-aws-orange: #ff9900;
+  --color-aws-squid: #161e2d;
+
+  /* CDN @import 금지. 설치돼 있으면 Pretendard, 없으면 OS 기본 한글 폰트로 폴백. */
+  --font-sans:
+    Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic',
+    system-ui, sans-serif;
+}
+
+@layer base {
+  html,
+  body {
+    /* 퀴즈 중 pull-to-refresh / 바운스 스크롤 방지 */
+    overscroll-behavior: none;
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    display: flex;
+    /* 팔 길이 거리에서 읽는 화면이라 본문 기준을 18px로 올린다. */
+    font-size: 1.125rem;
+    line-height: 1.5;
+    color: var(--color-aws-navy);
+    background-color: var(--color-aws-squid);
+    background-image: linear-gradient(
+      165deg,
+      #2f3f54 0%,
+      var(--color-aws-navy) 45%,
+      var(--color-aws-squid) 100%
+    );
+    background-attachment: fixed;
+    /* 공용 태블릿: 길게 눌러서 텍스트 선택 / 컨텍스트 메뉴 뜨는 걸 막는다. */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    /* viewport-fit=cover 대응 (노치 있는 태블릿) */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
+  }
+
+  #root {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+  }
+
+  button {
+    /* 300ms 더블탭 줌 딜레이 제거 */
+    touch-action: manipulation;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-aws-orange);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
