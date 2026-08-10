@@ -16,7 +16,7 @@ export default defineConfig({
       manifest: {
         name: 'AWS 상식 퀴즈',
         short_name: 'AWS 퀴즈',
-        description: 'AWS를 전혀 몰라도 풀 수 있는 5문제 퀴즈',
+        description: 'AWS Cloud Practitioner 수준 3문제 퀴즈',
         lang: 'ko',
         start_url: './',
         display: 'standalone',
@@ -34,6 +34,9 @@ export default defineConfig({
           },
         ],
       },
+      // autoUpdate + skipWaiting + clientsClaim 조합이라 배포/롤백 후
+      // 부스 기기는 '다음 새로고침'에 새 버전을 집는다. 강력 새로고침은 필요 없다.
+      // 다만 탭을 열어둔 채로는 갱신되지 않으므로, 롤백했으면 한 번 새로고침할 것.
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         clientsClaim: true,

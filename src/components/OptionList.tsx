@@ -23,6 +23,16 @@ function toState(
   return 'muted'
 }
 
+/**
+ * The absence of `min-h-0` here is the whole fix.
+ *
+ * Each OptionButton carries a min-height (its tap target), so it refuses to
+ * shrink past it. With `min-h-0` on this group, only the group's *box* shrank
+ * below that floor while the buttons themselves kept their height and painted
+ * outside the box, straight over the sibling feedback panel. Without it the
+ * group's automatic minimum size is its content, so it always encloses its
+ * children and a height shortfall turns into parent scroll, never overlap.
+ */
 export function OptionList({ question, selected, revealed, onSelect }: OptionListProps) {
   const isOx = question.format === 'ox'
 
@@ -32,8 +42,8 @@ export function OptionList({ question, selected, revealed, onSelect }: OptionLis
       aria-label="보기"
       className={
         isOx
-          ? 'grid min-h-0 flex-1 grid-cols-2 gap-3'
-          : 'flex min-h-0 flex-1 flex-col gap-2.5'
+          ? 'grid flex-1 grid-cols-2 gap-3'
+          : 'flex flex-1 flex-col gap-2.5 short:gap-2'
       }
     >
       {question.options.map((text, index) => (

@@ -15,18 +15,22 @@ export function toTier(score: number, total: number, threshold: number): Tier {
   return 'thanks'
 }
 
+/**
+ * 기본 설정(3문제 전부 정답)에서는 perfect 와 thanks 만 등장한다.
+ * prize 는 현장에서 ?prize=2 로 커트라인을 낮췄을 때만 쓰인다.
+ */
 export const TIER_COPY: Record<Tier, TierCopy> = {
   perfect: {
-    banner: '🏆 만점! 특별 상품 받아가세요!',
-    message: 'AWS 전문가세요? 대단해요!',
+    banner: '🎁 상품 받아가세요!',
+    message: '전부 정답이에요. 대단해요! 👏',
   },
   prize: {
-    banner: '🎁 스티커 받아가세요!',
+    banner: '🎁 상품 받아가세요!',
     message: 'AWS 감 좋으신데요? 👏',
   },
   thanks: {
     banner: '🙌 참여해주셔서 감사합니다!',
-    message: '한 번 더 도전해보세요!',
+    message: '아쉬워요, 한 번 더 도전해보세요!',
   },
 }
 

@@ -8,7 +8,7 @@ interface CategoryChipProps {
 export function CategoryChip({ category, className = '' }: CategoryChipProps) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-full bg-aws-navy/10 px-3 py-1 text-sm font-bold text-aws-navy ${className}`}
+      className={`inline-flex shrink-0 items-center rounded-md border border-asb-blue/30 bg-asb-blue/10 px-2.5 py-1 text-sm font-bold text-asb-blue ${className}`}
     >
       {category}
     </span>

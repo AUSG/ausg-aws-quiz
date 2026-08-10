@@ -11,9 +11,14 @@ export interface BoothConfig {
   readonly kiosk: boolean
 }
 
+/**
+ * 3문제를 **전부** 맞혀야 상품. 커트라인이 문항 수와 같으므로
+ * 등급은 사실상 만점(perfect) 아니면 없음(thanks) 2단계가 된다.
+ * 중간 등급(prize)은 현장에서 ?prize=2 로 완화했을 때만 등장한다.
+ */
 export const SESSION: BoothConfig = {
-  questionCount: 5,
-  prizeThreshold: 4,
+  questionCount: 3,
+  prizeThreshold: 3,
   idleResetMs: 60_000,
   kiosk: true,
 } as const

@@ -41,42 +41,51 @@ async function playThrough(user: ReturnType<typeof userEvent.setup>, correctCoun
 }
 
 describe('부스 퀴즈 한 바퀴', () => {
+  it('기본 설정은 3문제 전부 정답이어야 상품이다', () => {
+    expect(SESSION.questionCount).toBe(3)
+    expect(SESSION.prizeThreshold).toBe(SESSION.questionCount)
+  })
+
   it('시작 화면에는 제목·소요시간·시작 버튼만 있다', () => {
     render(<App />)
     expect(screen.getByRole('heading', { name: 'AWS 상식 퀴즈' })).toBeInTheDocument()
-    expect(screen.getByText(/5문제, 1분이면 끝나요/)).toBeInTheDocument()
+    expect(screen.getByText(new RegExp(`${SESSION.questionCount}문제`))).toBeInTheDocument()
     // 상품 커트라인은 결과 화면에서만 드러난다
-    expect(screen.queryByText(/스티커/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/상품/)).not.toBeInTheDocument()
     expect(screen.queryByText(/AUSG/)).not.toBeInTheDocument()
   })
 
-  it('만점이면 특별 상품 배너가 뜬다', async () => {
+  it('전부 맞히면 상품 배너가 뜬다', async () => {
     const user = userEvent.setup()
     render(<App />)
     await user.click(screen.getByRole('button', { name: '시작하기' }))
-    await playThrough(user, 5)
+    await playThrough(user, SESSION.questionCount)
 
-    expect(screen.getByText('5문제 중 5문제 정답!')).toBeInTheDocument()
-    expect(screen.getByText(/만점! 특별 상품 받아가세요/)).toBeInTheDocument()
+    const n = SESSION.questionCount
+    expect(screen.getByText(`${n}문제 중 ${n}문제 정답!`)).toBeInTheDocument()
+    expect(screen.getByText(/상품 받아가세요/)).toBeInTheDocument()
   })
 
-  it('4문제를 맞히면 스티커 배너가 뜬다', async () => {
+  // 이게 이번 규칙의 핵심이다. 하나만 틀려도 상품이 없어야 한다.
+  it('하나라도 틀리면 상품 배너가 뜨지 않는다', async () => {
     const user = userEvent.setup()
     render(<App />)
     await user.click(screen.getByRole('button', { name: '시작하기' }))
-    await playThrough(user, 4)
+    await playThrough(user, SESSION.questionCount - 1)
 
-    expect(screen.getByText('5문제 중 4문제 정답!')).toBeInTheDocument()
-    expect(screen.getByText(/스티커 받아가세요/)).toBeInTheDocument()
+    const n = SESSION.questionCount
+    expect(screen.getByText(`${n}문제 중 ${n - 1}문제 정답!`)).toBeInTheDocument()
+    expect(screen.getByText(/참여해주셔서 감사합니다/)).toBeInTheDocument()
+    expect(screen.queryByText(/받아가세요/)).not.toBeInTheDocument()
   })
 
-  it('커트라인 미만이면 상품 배너가 뜨지 않는다', async () => {
+  it('하나도 못 맞혀도 안내 문구가 나온다', async () => {
     const user = userEvent.setup()
     render(<App />)
     await user.click(screen.getByRole('button', { name: '시작하기' }))
     await playThrough(user, 0)
 
-    expect(screen.getByText('5문제 중 0문제 정답!')).toBeInTheDocument()
+    expect(screen.getByText(`${SESSION.questionCount}문제 중 0문제 정답!`)).toBeInTheDocument()
     expect(screen.getByText(/참여해주셔서 감사합니다/)).toBeInTheDocument()
     expect(screen.queryByText(/받아가세요/)).not.toBeInTheDocument()
   })
@@ -132,7 +141,7 @@ describe('부스 퀴즈 한 바퀴', () => {
     const user = userEvent.setup()
     render(<App />)
     await user.click(screen.getByRole('button', { name: '시작하기' }))
-    await playThrough(user, 5)
+    await playThrough(user, SESSION.questionCount)
     await user.click(screen.getByRole('button', { name: '다시 풀기' }))
 
     expect(screen.getByRole('group', { name: '보기' })).toBeInTheDocument()
@@ -143,7 +152,7 @@ describe('부스 퀴즈 한 바퀴', () => {
     const user = userEvent.setup()
     render(<App />)
     await user.click(screen.getByRole('button', { name: '시작하기' }))
-    await playThrough(user, 5)
+    await playThrough(user, SESSION.questionCount)
 
     const toggle = screen.getByRole('button', { name: '정답 다시 보기' })
     expect(toggle).toHaveAttribute('aria-expanded', 'false')

@@ -1,16 +1,79 @@
 @import 'tailwindcss';
 
-/* Tailwind v4는 설정 파일이 없다. 디자인 토큰은 전부 여기서 정의한다. */
-@theme {
-  --color-aws-navy: #232f3e;
-  --color-aws-orange: #ff9900;
-  --color-aws-squid: #161e2d;
-
-  /* CDN @import 금지. 설치돼 있으면 Pretendard, 없으면 OS 기본 한글 폰트로 폴백. */
-  --font-sans:
-    Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic',
-    system-ui, sans-serif;
+/* ─────────────────────────────────────────────────────────────
+   Amazon Ember — Latin and digits only. The files contain zero Hangul
+   glyphs, so every Korean character falls through to Pretendard below.
+   All faces are self-hosted: the booth has to work with no network.
+   ───────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Amazon Ember';
+  src: url('/fonts/AmazonEmber_W_Lt.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
 }
+
+@font-face {
+  font-family: 'Amazon Ember';
+  src: url('/fonts/AmazonEmber_W_Rg.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Amazon Ember';
+  src: url('/fonts/AmazonEmber_W_Bd.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Amazon Ember';
+  src: url('/fonts/AmazonEmber_W_He.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Hangul-only variable subset (weight axis 45-920). The unicode-range is what
+   makes the split work: Ember renders Latin, Pretendard renders Korean.
+   Drop it and Pretendard wins everything and Ember never appears. */
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/fonts/Pretendard-subset.woff2') format('woff2');
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+1100-11FF, U+3130-318F, U+A960-A97F, U+AC00-D7A3, U+D7B0-D7FF;
+}
+
+/* Tailwind v4는 설정 파일이 없다. 디자인 토큰은 전부 여기서 정의한다.
+   Values are taken verbatim from the AWS Skill Builder design system
+   (the reference site's extra.css). */
+@theme {
+  --color-asb-dark: #16191f;
+  --color-asb-text: #16191f;
+  --color-asb-blue: #0073bb;
+  --color-asb-orange: #ff9900;
+  --color-asb-orange-hover: #e88b00;
+  --color-asb-border: #d1d5db;
+  --color-asb-border-light: #e5e7eb;
+  --color-asb-gray: #6b7280;
+  --color-asb-gray-light: #9ca3af;
+  --color-asb-callout: #eef2f6;
+  --color-asb-page: #fafafa;
+
+  --font-sans:
+    'Amazon Ember', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+    'Malgun Gothic', system-ui, sans-serif;
+}
+
+/* Short viewports (360x640 Android, 375x667 iPhone SE) get one step less
+   padding, type size and tap-target height. Height is the axis that width
+   breakpoints cannot see, and it is the axis the quiz layout runs out of. */
+@custom-variant short (@media (max-height: 719px));
 
 @layer base {
   html,
@@ -27,15 +90,9 @@
     /* 팔 길이 거리에서 읽는 화면이라 본문 기준을 18px로 올린다. */
     font-size: 1.125rem;
     line-height: 1.5;
-    color: var(--color-aws-navy);
-    background-color: var(--color-aws-squid);
-    background-image: linear-gradient(
-      165deg,
-      #2f3f54 0%,
-      var(--color-aws-navy) 45%,
-      var(--color-aws-squid) 100%
-    );
-    background-attachment: fixed;
+    color: var(--color-asb-text);
+    /* Light documentation-style background, matching the reference. No gradient. */
+    background-color: var(--color-asb-page);
     /* 공용 태블릿: 길게 눌러서 텍스트 선택 / 컨텍스트 메뉴 뜨는 걸 막는다. */
     -webkit-user-select: none;
     user-select: none;
@@ -60,7 +117,8 @@
   }
 
   :focus-visible {
-    outline: 3px solid var(--color-aws-orange);
+    /* The offset keeps the ring on the white card, so contrast stays ~5:1. */
+    outline: 3px solid var(--color-asb-blue);
     outline-offset: 2px;
   }
 }
