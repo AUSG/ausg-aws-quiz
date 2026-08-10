@@ -1,0 +1,16 @@
+node_modules
+dist
+dist-ssr
+coverage
+.vercel
+.env
+.env.*
+!.env.example
+*.local
+.DS_Store
+logs
+*.log
+npm-debug.log*
+dev-dist
+*.tsbuildinfo
+.cache/
