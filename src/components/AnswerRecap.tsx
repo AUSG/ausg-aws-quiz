@@ -18,7 +18,7 @@ export function AnswerRecap({ results, expanded, id, className = '' }: AnswerRec
             <span
               aria-hidden="true"
               className={`block h-4 w-4 rounded-full ${
-                item.isCorrect ? 'bg-emerald-500' : 'bg-slate-300 ring-2 ring-slate-400'
+                item.isCorrect ? 'bg-emerald-600' : 'bg-white ring-2 ring-asb-gray-light'
               }`}
             />
             <span className="sr-only">{`${index + 1}번 ${item.isCorrect ? '정답' : '오답'}`}</span>
@@ -56,14 +56,16 @@ function RecapItem({ item, number }: RecapItemProps) {
 
   return (
     <li
-      className={`rounded-2xl border-2 p-4 ${
-        isCorrect ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50'
+      className={`rounded-lg border border-l-4 p-4 ${
+        isCorrect
+          ? 'border-emerald-200 border-l-emerald-600 bg-emerald-50'
+          : 'border-asb-border-light border-l-asb-gray-light bg-asb-callout'
       }`}
     >
-      <p className="text-sm font-bold text-aws-navy/70">
+      <p className="text-sm font-bold text-asb-gray">
         {number}번 · {question.category} · {isCorrect ? '정답' : '오답'}
       </p>
-      <p className="mt-1 text-base leading-snug font-bold text-aws-navy break-keep">
+      <p className="mt-1 text-base leading-snug font-bold text-asb-dark break-keep">
         {question.prompt}
       </p>
 
@@ -75,7 +77,7 @@ function RecapItem({ item, number }: RecapItemProps) {
         </p>
       ) : null}
 
-      <p className="mt-2 text-[0.95rem] leading-relaxed text-aws-navy/85">
+      <p className="mt-2 text-[0.95rem] leading-relaxed text-asb-text break-keep">
         {question.explanation}
       </p>
     </li>

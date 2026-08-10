@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AWS 상식 퀴즈">
-  <rect width="64" height="64" rx="14" fill="#232F3E" />
+  <rect width="64" height="64" rx="12" fill="#16191F" />
   <text
     x="32"
-    y="30"
+    y="31"
     text-anchor="middle"
-    font-family="system-ui, -apple-system, sans-serif"
-    font-size="22"
-    font-weight="700"
+    font-family="'Amazon Ember', Helvetica, system-ui, -apple-system, sans-serif"
+    font-size="24"
+    font-weight="800"
     fill="#FFFFFF"
   >?</text>
   <path

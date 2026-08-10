@@ -14,18 +14,20 @@ interface OptionButtonProps {
   onSelect: () => void
 }
 
+/* Border is always 2px, like `.asb-btn` in the reference system. Keeping the
+   width constant across states means revealing an answer never reflows. */
 const BOX: Record<OptionState, string> = {
-  idle: 'border-aws-navy/15 bg-white text-aws-navy hover:border-aws-orange hover:bg-aws-orange/5',
+  idle: 'border-asb-border bg-white text-asb-text hover:border-asb-blue hover:bg-asb-blue/5',
   correct: 'border-emerald-600 bg-emerald-50 text-emerald-900',
   wrong: 'border-rose-600 bg-rose-50 text-rose-900',
-  muted: 'border-aws-navy/10 bg-white text-aws-navy opacity-50',
+  muted: 'border-asb-border-light bg-white text-asb-gray',
 }
 
 const BADGE: Record<OptionState, string> = {
-  idle: 'bg-aws-navy/8 text-aws-navy',
+  idle: 'bg-asb-callout text-asb-text',
   correct: 'bg-emerald-600 text-white',
   wrong: 'bg-rose-600 text-white',
-  muted: 'bg-aws-navy/8 text-aws-navy',
+  muted: 'bg-asb-callout text-asb-gray',
 }
 
 /** 색만으로 정오를 구분하지 않도록 아이콘을 같이 쓴다(색각이상 대응). */
@@ -35,6 +37,13 @@ const SR_TEXT: Record<OptionState, string | null> = {
   wrong: '내가 고른 오답',
   muted: null,
 }
+
+/* 44px is the accessibility floor for a tap target; it only rises to 56px once
+   the viewport is wide enough to afford it. `flex-1` lets a button soak up
+   spare height, and it shrinks back down to min-h when height runs out.
+   The parent (OptionList) deliberately omits min-h-0, so this floor is carried
+   into the group's own box height instead of spilling over its siblings. */
+const SIZING = 'min-h-11 sm:min-h-14 short:min-h-11'
 
 export function OptionButton({
   label,
@@ -53,15 +62,15 @@ export function OptionButton({
       disabled={disabled}
       onClick={onSelect}
       className={
-        'flex w-full min-h-14 items-center gap-3 rounded-2xl border-2 px-4 py-2.5 text-left' +
-        ' transition-[background-color,border-color] duration-150 ease-out sm:min-h-16' +
+        `flex w-full ${SIZING} items-center gap-3 rounded-lg border-2 px-3.5 py-2 text-left` +
+        ' transition-[background-color,border-color] duration-150 ease-out sm:px-4' +
         (tile ? ' flex-col justify-center gap-1 text-center' : ' flex-1') +
         ` ${BOX[state]}`
       }
     >
       {showLabel ? (
         <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base font-black ${BADGE[state]}`}
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-base font-bold sm:h-9 sm:w-9 ${BADGE[state]}`}
           aria-hidden="true"
         >
           {label}
@@ -70,7 +79,9 @@ export function OptionButton({
 
       <span
         className={
-          tile ? 'text-4xl leading-none font-black sm:text-5xl' : 'flex-1 text-lg font-bold'
+          tile
+            ? 'text-3xl leading-none font-extrabold sm:text-5xl'
+            : 'flex-1 text-base leading-snug font-bold break-keep sm:text-lg'
         }
       >
         {text}
@@ -88,7 +99,7 @@ function CheckIcon() {
     <svg
       viewBox="0 0 24 24"
       aria-hidden="true"
-      className="h-7 w-7 shrink-0 text-emerald-600"
+      className="h-6 w-6 shrink-0 text-emerald-600 sm:h-7 sm:w-7"
       fill="none"
       stroke="currentColor"
       strokeWidth="3.2"
@@ -105,7 +116,7 @@ function CrossIcon() {
     <svg
       viewBox="0 0 24 24"
       aria-hidden="true"
-      className="h-7 w-7 shrink-0 text-rose-600"
+      className="h-6 w-6 shrink-0 text-rose-600 sm:h-7 sm:w-7"
       fill="none"
       stroke="currentColor"
       strokeWidth="3.2"

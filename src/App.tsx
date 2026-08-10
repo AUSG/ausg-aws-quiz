@@ -18,7 +18,7 @@ export function App() {
   useIdleReset(config.kiosk && quiz.phase !== 'idle', config.idleResetMs, quiz.reset)
 
   return (
-    <main className="flex min-h-0 w-full flex-1 items-center justify-center p-3 sm:p-6">
+    <main className="flex min-h-0 w-full flex-1 items-center justify-center p-3 short:p-2 sm:p-6">
       <div className="flex h-full max-h-full w-full max-w-[34rem] flex-col justify-center">
         {quiz.phase === 'idle' ? (
           <StartScreen total={config.questionCount} onStart={quiz.start} />

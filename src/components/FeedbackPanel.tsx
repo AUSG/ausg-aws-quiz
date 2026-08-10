@@ -11,6 +11,14 @@ interface FeedbackPanelProps {
 /** 'A'/'O'는 모음으로 끝나서 '예요', 'X'(엑스)는 자음으로 끝나서 '이에요'. */
 const VOWEL_ENDING_LABELS: ReadonlySet<string> = new Set(['A', 'B', 'C', 'D', 'O'])
 
+/* The reference system's callout idiom (4px accent bar on the left + a pale
+   tint) applied to the correct/incorrect pair. The design system has no
+   semantic success/error colours, so emerald/rose stay as they were. */
+const TONE = {
+  correct: 'border-emerald-200 border-l-emerald-600 bg-emerald-50',
+  wrong: 'border-rose-200 border-l-rose-600 bg-rose-50',
+} as const
+
 function headlineFor(isCorrect: boolean, correctLabel: string): string {
   if (isCorrect) return '정답이에요! 🎉'
   const suffix = VOWEL_ENDING_LABELS.has(correctLabel) ? '예요' : '이에요'
@@ -28,21 +36,23 @@ export function FeedbackPanel({
     <div role="status" aria-live="polite" aria-atomic="true">
       {revealed ? (
         <div
-          className={`mt-3 rounded-2xl border-2 p-4 ${
-            isCorrect ? 'border-emerald-300 bg-emerald-50' : 'border-rose-300 bg-rose-50'
+          className={`mt-3 rounded-lg border border-l-4 p-4 short:mt-2 short:p-3 ${
+            isCorrect ? TONE.correct : TONE.wrong
           }`}
         >
           <p
-            className={`flex items-center gap-2 text-lg font-black ${
+            className={`flex items-center gap-2 text-lg leading-snug font-extrabold break-keep short:text-base ${
               isCorrect ? 'text-emerald-900' : 'text-rose-900'
             }`}
           >
             {isCorrect ? <CheckIcon /> : <CrossIcon />}
             {headlineFor(isCorrect, correctLabel)}
           </p>
-          <p className="mt-1.5 text-base leading-relaxed text-aws-navy">{explanation}</p>
+          <p className="mt-1.5 text-base leading-relaxed text-asb-text break-keep short:mt-1 short:text-[0.95rem]">
+            {explanation}
+          </p>
           {service === undefined ? null : (
-            <p className="mt-2 inline-flex rounded-lg bg-aws-navy/10 px-2.5 py-1 text-sm font-bold text-aws-navy">
+            <p className="mt-2 inline-flex rounded-md bg-white px-2.5 py-1 text-sm font-bold text-asb-blue ring-1 ring-asb-blue/30 short:mt-1.5">
               {service}
             </p>
           )}

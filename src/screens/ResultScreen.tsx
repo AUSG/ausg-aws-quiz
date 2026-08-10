@@ -40,17 +40,17 @@ export function ResultScreen({
         <PrizeBanner tier={tier} text={copy.banner} />
 
         {/* 배너보다 작게 유지한다 — 스태프가 먼저 읽어야 하는 건 배너다. */}
-        <h1 className="mt-6 shrink-0 text-center text-3xl leading-tight font-black text-aws-navy break-keep">
+        <h1 className="mt-6 shrink-0 text-center text-3xl leading-tight font-extrabold text-asb-dark break-keep short:mt-4 short:text-2xl">
           {total}문제 중 {score}문제 정답!
         </h1>
-        <p className="mt-2 shrink-0 text-center text-lg font-bold text-aws-navy/80 break-keep">
+        <p className="mt-2 shrink-0 text-center text-lg font-bold text-asb-gray break-keep">
           {copy.message}
         </p>
 
         <AnswerRecap id={RECAP_ID} className="mt-5" results={results} expanded={expanded} />
       </div>
 
-      <div className="mt-5 flex shrink-0 flex-col gap-2.5">
+      <div className="mt-5 flex shrink-0 flex-col gap-2.5 short:mt-4">
         <PrimaryButton onClick={onRestart}>다시 풀기</PrimaryButton>
         <PrimaryButton
           variant="secondary"
