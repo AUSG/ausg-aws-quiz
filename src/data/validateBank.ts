@@ -9,6 +9,7 @@ export const LIMITS = {
   prompt: 60,
   option: 24,
   explanation: 70,
+  hint: 45,
 } as const
 
 const MIN_DIFFICULTY_COVERAGE = 1
@@ -59,6 +60,20 @@ export function validateBank(bank: readonly Question[]): string[] {
     if (explanation.length === 0) errors.push(`${at} 해설이 비어 있음`)
     if (explanation.length > LIMITS.explanation) {
       errors.push(`${at} 해설이 ${LIMITS.explanation}자를 넘음 (${explanation.length}자)`)
+    }
+
+    const hint = question.hint.trim()
+    if (hint.length === 0) errors.push(`${at} 힌트가 비어 있음`)
+    if (hint.length > LIMITS.hint) {
+      errors.push(`${at} 힌트가 ${LIMITS.hint}자를 넘음 (${hint.length}자)`)
+    }
+    // 힌트가 정답을 그대로 말해버리면 힌트가 아니라 정답 공개다.
+    // ox 문항은 정답이 'O'/'X' 한 글자라 우연히 걸리므로 제외한다.
+    if (question.format === 'choice') {
+      const answerText = question.options[question.answerIndex]
+      if (answerText && hint.includes(answerText)) {
+        errors.push(`${at} 힌트에 정답 "${answerText}"이(가) 그대로 들어 있음`)
+      }
     }
   }
 

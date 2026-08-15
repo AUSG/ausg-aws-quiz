@@ -20,6 +20,7 @@ Pretendard(한글)를 앱이 실제로 쓰는 글자만 남겨 서브셋으로 �
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 import urllib.request
@@ -30,7 +31,9 @@ SRC_DIRS = [ROOT / "src"]
 EXTRA_FILES = [ROOT / "index.html"]
 OUT_DIR = ROOT / "public" / "fonts"
 OUT_FONT = OUT_DIR / "Pretendard-subset.woff2"
-OUT_CHARSET = OUT_DIR / "Pretendard-subset.charset.txt"
+# public/ 이 아니라 scripts/ 에 둔다. public/ 에 두면 빌드 산출물이
+# 그대로 배포되고 서비스 워커까지 캐시한다(실제로 그랬다).
+OUT_CHARSET = ROOT / "scripts" / "font-charset.txt"
 
 PRETENDARD_VERSION = "v1.3.9"
 PRETENDARD_URL = (
@@ -56,6 +59,28 @@ ALWAYS_UNICODES = ",".join(
 )
 
 
+COMMENT_PATTERNS = [
+    re.compile(r"/\*.*?\*/", re.S),  # /* ... */  (JS·CSS 공통)
+    re.compile(r"//[^\n]*"),  # // ...
+    re.compile(r"<!--.*?-->", re.S),  # HTML 주석
+]
+
+
+def strip_comments(text: str) -> str:
+    """주석을 걷어낸다.
+
+    주석의 한글은 화면에 렌더되지 않으므로 서브셋에 넣을 이유가 없다.
+    이걸 빼먹으면 주석을 한글로 쓸 때마다 폰트가 커지고, 개발자가
+    커버리지 테스트를 통과시키려고 주석을 영어로 바꾸게 된다(실제로 그랬다).
+
+    문자열 안의 '//' 같은 건 과하게 지워질 수 있지만, 방향이 안전한 쪽이다 —
+    서브셋이 작아지는 게 아니라 커버리지 테스트가 더 엄격해질 뿐이다.
+    """
+    for pattern in COMMENT_PATTERNS:
+        text = pattern.sub(" ", text)
+    return text
+
+
 def collect_source_text() -> str:
     """화면에 렌더되는 소스만 읽어 실제로 등장하는 글자를 모은다.
 
@@ -68,10 +93,10 @@ def collect_source_text() -> str:
             if "test" in path.relative_to(ROOT).parts:
                 continue
             if path.suffix in {".ts", ".tsx", ".css", ".html"} and path.is_file():
-                chunks.append(path.read_text(encoding="utf-8"))
+                chunks.append(strip_comments(path.read_text(encoding="utf-8")))
     for path in EXTRA_FILES:
         if path.is_file():
-            chunks.append(path.read_text(encoding="utf-8"))
+            chunks.append(strip_comments(path.read_text(encoding="utf-8")))
     return "".join(chunks)
 
 

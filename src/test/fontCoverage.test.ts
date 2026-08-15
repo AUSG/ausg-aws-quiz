@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, extname } from 'node:path'
 
 /**
@@ -12,8 +12,21 @@ import { join, extname } from 'node:path'
  */
 
 const ROOT = join(import.meta.dirname, '..', '..')
-const CHARSET_PATH = join(ROOT, 'public', 'fonts', 'Pretendard-subset.charset.txt')
+const CHARSET_PATH = join(ROOT, 'scripts', 'font-charset.txt')
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.css', '.html'])
+
+/**
+ * 주석은 화면에 렌더되지 않으므로 검사 대상이 아니다.
+ * 이걸 빼먹으면 한글 주석을 쓸 때마다 테스트가 깨지고, 결국 주석을
+ * 영어로 바꾸게 된다 — 폰트 최적화가 코드 가독성을 갉아먹는 셈이다.
+ * scripts/build-fonts.py 의 strip_comments 와 같은 규칙이어야 한다.
+ */
+function stripComments(text: string): string {
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/\/\/[^\n]*/g, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+}
 
 /** 테스트 디렉터리는 화면에 렌더되지 않으므로 제외한다(자기참조 방지). */
 function collectFiles(dir: string, found: string[] = []): string[] {
@@ -33,7 +46,7 @@ function sourceCharacters(): Set<string> {
   const files = [...collectFiles(join(ROOT, 'src')), join(ROOT, 'index.html')]
   const chars = new Set<string>()
   for (const file of files) {
-    for (const char of readFileSync(file, 'utf8')) {
+    for (const char of stripComments(readFileSync(file, 'utf8'))) {
       if (char !== '\n' && char !== '\r' && char !== '\t') chars.add(char)
     }
   }
@@ -56,6 +69,19 @@ describe('Pretendard 서브셋 커버리지', () => {
       `폰트 서브셋에 없는 한글: ${missing.join('')}\n` +
         '→ python3 scripts/build-fonts.py 를 다시 실행하세요.',
     ).toEqual([])
+  })
+
+  it('주석의 한글은 서브셋을 키우지 않는다', () => {
+    // 주석을 한글로 쓴다고 폰트가 커지면 안 된다. 그러면 개발자가
+    // 테스트를 통과시키려고 주석을 영어로 바꾸게 된다.
+    const withComment = stripComments('// 주석에만 있는 글자 뷁\nconst a = 1')
+    expect(withComment).not.toContain('뷁')
+    expect(withComment).toContain('const a = 1')
+  })
+
+  it('빌드 산출물이 배포에 실려 나가지 않는다', () => {
+    // charset.txt를 public/ 에 두면 dist/ 로 복사되고 서비스 워커까지 캐시한다.
+    expect(existsSync(join(ROOT, 'public', 'fonts', 'Pretendard-subset.charset.txt'))).toBe(false)
   })
 
   it('서브셋이 부스에서 받을 만한 크기다', () => {

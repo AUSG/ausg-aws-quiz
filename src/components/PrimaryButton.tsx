@@ -14,9 +14,9 @@ interface PrimaryButtonProps {
   onClick: () => void
 }
 
-/* Reference `.asb-btn`: 8px radius, 2px border, weight 700.
-   The primary variant is orange with BLACK label text (contrast 9.8:1) —
-   that black-on-orange pairing is the signature of the design system. */
+/* 레퍼런스의 `.asb-btn`: 반경 8px, 테두리 2px, 굵기 700.
+   기본 버튼은 주황 배경에 '검은' 글씨다(대비 9.8:1).
+   이 검정-주황 조합이 해당 디자인 시스템의 특징이다. */
 const BASE =
   'inline-flex w-full items-center justify-center gap-2 rounded-lg border-2 px-5 text-center font-bold' +
   ' transition-[background-color,border-color] duration-150 ease-out' +

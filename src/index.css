@@ -1,9 +1,9 @@
 @import 'tailwindcss';
 
 /* ─────────────────────────────────────────────────────────────
-   Amazon Ember — Latin and digits only. The files contain zero Hangul
-   glyphs, so every Korean character falls through to Pretendard below.
-   All faces are self-hosted: the booth has to work with no network.
+   Amazon Ember — 라틴/숫자 전용. 한글 글리프가 0개라
+   한글은 전부 아래 Pretendard로 넘어간다.
+   전부 자체 호스팅한다. 부스는 네트워크 없이도 동작해야 한다.
    ───────────────────────────────────────────────────────────── */
 @font-face {
   font-family: 'Amazon Ember';
@@ -37,9 +37,9 @@
   font-display: swap;
 }
 
-/* Hangul-only variable subset (weight axis 45-920). The unicode-range is what
-   makes the split work: Ember renders Latin, Pretendard renders Korean.
-   Drop it and Pretendard wins everything and Ember never appears. */
+/* 한글 전용 가변 서브셋(굵기 축 45-920). 이 분리를 만드는 건 unicode-range다.
+   라틴은 Ember가, 한글은 Pretendard가 맡는다.
+   이걸 빼면 Pretendard가 전부 가져가고 Ember는 영영 안 보인다. */
 @font-face {
   font-family: 'Pretendard';
   src: url('/fonts/Pretendard-subset.woff2') format('woff2');
@@ -50,8 +50,8 @@
 }
 
 /* Tailwind v4는 설정 파일이 없다. 디자인 토큰은 전부 여기서 정의한다.
-   Values are taken verbatim from the AWS Skill Builder design system
-   (the reference site's extra.css). */
+   값은 AWS Skill Builder 디자인 시스템(레퍼런스 사이트의 extra.css)에서
+   그대로 가져왔다. */
 @theme {
   --color-asb-dark: #16191f;
   --color-asb-text: #16191f;
@@ -65,15 +65,25 @@
   --color-asb-callout: #eef2f6;
   --color-asb-page: #fafafa;
 
+  /* Codex 브랜드 색. 힌트가 '이 앱의 다른 기능'이 아니라 '다른 도구가
+     거들어 준 것'으로 읽히도록 ASB 팔레트 밖의 색을 일부러 쓴다.
+     codex-blue는 흰 배경에서 6.27:1 이라 본문 크기 글자에도 AA를 넘긴다. */
+  --color-codex-violet: #a0a2ff;
+  --color-codex-blue: #2e49f5;
+
   --font-sans:
     'Amazon Ember', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
     'Malgun Gothic', system-ui, sans-serif;
 }
 
-/* Short viewports (360x640 Android, 375x667 iPhone SE) get one step less
-   padding, type size and tap-target height. Height is the axis that width
-   breakpoints cannot see, and it is the axis the quiz layout runs out of. */
+/* 세로가 짧은 화면(360x640 안드로이드, 375x667 iPhone SE)은 여백·글자 크기·
+   탭 타깃 높이를 한 단계씩 낮춘다. 너비 브레이크포인트로는 볼 수 없는 축이
+   높이인데, 정작 퀴즈 레이아웃이 모자라는 건 그 높이 축이다. */
 @custom-variant short (@media (max-height: 719px));
+
+/* 반대쪽 끝: 세로 태블릿에서는 보기들이 흰 여백 한가운데 떠 있는
+   작은 섬처럼 보이므로, 여기서는 오히려 하한을 올린다. */
+@custom-variant tall (@media (min-height: 900px));
 
 @layer base {
   html,
@@ -91,7 +101,7 @@
     font-size: 1.125rem;
     line-height: 1.5;
     color: var(--color-asb-text);
-    /* Light documentation-style background, matching the reference. No gradient. */
+    /* 레퍼런스와 같은 밝은 문서형 배경. 그라데이션 없음. */
     background-color: var(--color-asb-page);
     /* 공용 태블릿: 길게 눌러서 텍스트 선택 / 컨텍스트 메뉴 뜨는 걸 막는다. */
     -webkit-user-select: none;
@@ -117,7 +127,7 @@
   }
 
   :focus-visible {
-    /* The offset keeps the ring on the white card, so contrast stays ~5:1. */
+    /* offset을 줘야 링이 흰 카드 위에 놓여 대비가 약 5:1로 유지된다. */
     outline: 3px solid var(--color-asb-blue);
     outline-offset: 2px;
   }

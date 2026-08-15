@@ -14,8 +14,8 @@ interface OptionButtonProps {
   onSelect: () => void
 }
 
-/* Border is always 2px, like `.asb-btn` in the reference system. Keeping the
-   width constant across states means revealing an answer never reflows. */
+/* 테두리는 항상 2px다. 레퍼런스의 `.asb-btn`과 같다.
+   상태가 바뀌어도 두께가 일정해야 정답 공개 때 레이아웃이 밀리지 않는다. */
 const BOX: Record<OptionState, string> = {
   idle: 'border-asb-border bg-white text-asb-text hover:border-asb-blue hover:bg-asb-blue/5',
   correct: 'border-emerald-600 bg-emerald-50 text-emerald-900',
@@ -38,12 +38,21 @@ const SR_TEXT: Record<OptionState, string | null> = {
   muted: null,
 }
 
-/* 44px is the accessibility floor for a tap target; it only rises to 56px once
-   the viewport is wide enough to afford it. `flex-1` lets a button soak up
-   spare height, and it shrinks back down to min-h when height runs out.
-   The parent (OptionList) deliberately omits min-h-0, so this floor is carried
-   into the group's own box height instead of spilling over its siblings. */
-const SIZING = 'min-h-11 sm:min-h-14 short:min-h-11'
+/* 보기의 크기는 `flex-1`이 아니라 높이 '하한'으로 정한다.
+ *
+ * 남는 높이를 다 먹게 두면 세로 태블릿에서 보기 4개가 각각 370px짜리 판이 되고,
+ * 더 나쁘게는 방금 누른 보기와 '왜 틀렸는지'를 설명하는 해설 사이에 그 여백이
+ * 끼어든다. 하한으로 잡으면 문제 → 보기 → 해설이 붙어 있고, 남는 공간은
+ * 고정된 버튼 아래 카드 맨 밑으로 밀려난다.
+ *
+ * The floor tracks viewport height rather than width, because height is what
+ * actually runs out: 44px (the accessibility minimum) when there is nothing to
+ * spare, 56px normally, 80px on a tall tablet. OX questions use two big tiles
+ * instead of a list, so they get a much higher floor. */
+const SIZING = {
+  list: 'min-h-14 short:min-h-11 tall:min-h-20',
+  tile: 'min-h-40 short:min-h-32 tall:min-h-64',
+} as const
 
 export function OptionButton({
   label,
@@ -62,9 +71,10 @@ export function OptionButton({
       disabled={disabled}
       onClick={onSelect}
       className={
-        `flex w-full ${SIZING} items-center gap-3 rounded-lg border-2 px-3.5 py-2 text-left` +
+        'flex w-full items-center gap-3 rounded-lg border-2 px-3.5 py-2 text-left' +
         ' transition-[background-color,border-color] duration-150 ease-out sm:px-4' +
-        (tile ? ' flex-col justify-center gap-1 text-center' : ' flex-1') +
+        ` ${tile ? SIZING.tile : SIZING.list}` +
+        (tile ? ' flex-col justify-center gap-1 text-center' : '') +
         ` ${BOX[state]}`
       }
     >

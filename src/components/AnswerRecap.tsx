@@ -59,7 +59,11 @@ function RecapItem({ item, number }: RecapItemProps) {
       className={`rounded-lg border border-l-4 p-4 ${
         isCorrect
           ? 'border-emerald-200 border-l-emerald-600 bg-emerald-50'
-          : 'border-asb-border-light border-l-asb-gray-light bg-asb-callout'
+          : /* White, not the callout grey: the meta line is 14px bold
+               asb-gray, which lands at 4.29:1 on #eef2f6 and 5.0:1 on white.
+               The left bar and the border still separate it from a correct
+               answer. */
+            'border-asb-border-light border-l-asb-gray-light bg-white'
       }`}
     >
       <p className="text-sm font-bold text-asb-gray">

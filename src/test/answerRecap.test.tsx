@@ -15,6 +15,7 @@ const oxQuestion: Question = {
   options: ['O', 'X'],
   answerIndex: 0,
   explanation: '필요할 때 빌려 쓰는 방식이에요.',
+  hint: '빌리는 것과 사는 것의 차이예요.',
 }
 
 const choiceQuestion: Question = {
@@ -26,6 +27,7 @@ const choiceQuestion: Question = {
   options: ['다중 인증(MFA)', '백업', '암호화', '로그인'],
   answerIndex: 0,
   explanation: '한 번 더 확인해 계정을 지켜요.',
+  hint: '한 단계를 더 거치는 인증이에요.',
 }
 
 function item(question: Question, selected: number | null): QuizResultItem {
