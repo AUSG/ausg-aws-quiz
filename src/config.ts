@@ -7,6 +7,8 @@ export interface BoothConfig {
   readonly prizeThreshold: number
   /** 무입력 자동 리셋(ms). 0이면 비활성. */
   readonly idleResetMs: number
+  /** 힌트 버튼을 누르고 힌트가 뜨기까지의 지연(ms). 0이면 즉시. */
+  readonly hintDelayMs: number
   /** 키오스크 모드(공용 태블릿) 여부 */
   readonly kiosk: boolean
 }
@@ -20,8 +22,17 @@ export const SESSION: BoothConfig = {
   questionCount: 3,
   prizeThreshold: 3,
   idleResetMs: 60_000,
+  hintDelayMs: 700,
   kiosk: true,
 } as const
+
+/**
+ * 힌트가 즉시 튀어나오면 미리 적어둔 문장을 그대로 꺼내는 것처럼 보인다.
+ * 실제로 그렇긴 하지만 화면에 Codex 라벨을 붙여둔 이상 잠깐 뜸을 들이는 편이
+ * 앞뒤가 맞는다. 다만 부스는 한 사람당 30초라 이 지연이 그대로 처리량 비용이다.
+ * 대기줄이 길어지면 `?hint=0` 으로 끈다.
+ */
+const MAX_HINT_DELAY_MS = 3000
 
 /** 기본 난이도 배치. 쉬운 것부터 올라가서 1번에서 틀리고 포기하는 걸 막는다. */
 export const DEFAULT_DIFFICULTY_PLAN: readonly Difficulty[] = [1, 1, 2, 2, 3]
@@ -61,10 +72,14 @@ export function readBoothConfig(search: string): BoothConfig {
   const idleResetMs =
     rawIdle === null ? SESSION.idleResetMs : clamp(rawIdle, 0, 600) * 1000
 
+  const rawHint = readInt(params, 'hint')
+  const hintDelayMs =
+    rawHint === null ? SESSION.hintDelayMs : clamp(rawHint, 0, MAX_HINT_DELAY_MS)
+
   const kioskParam = params.get('kiosk')
   const kiosk = kioskParam === null ? SESSION.kiosk : kioskParam !== '0'
 
-  return { questionCount, prizeThreshold, idleResetMs, kiosk }
+  return { questionCount, prizeThreshold, idleResetMs, hintDelayMs, kiosk }
 }
 
 /**

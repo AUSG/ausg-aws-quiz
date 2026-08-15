@@ -29,12 +29,16 @@ export function ResultScreen({
   const copy = tierCopy(tier)
 
   return (
-    <Card className="h-full max-h-full">
+    // 접힌 상태에서는 카드가 내용만큼만 차지하고 App이 가운데 정렬한다.
+    // 시작 화면과 같은 방식이다 — 3문항 복습은 폰 화면을 채우지 못하고,
+    // 억지로 늘리면 배너 위에 큰 공백이 생긴다. 펼치는 건 명시적인 탭이고,
+    // 그때 비로소 카드가 전체 높이를 차지해 문항별 복습을 내부 스크롤한다.
+    <Card className={expanded ? 'h-full max-h-full' : 'max-h-full'}>
       {/* 배너까지 한 덩어리로 세로 가운데 정렬해야 배너와 점수 사이가 벌어지지 않는다.
           펼치면 위에서부터 스크롤된다. */}
       <div
-        className={`flex min-h-0 flex-1 flex-col overflow-y-auto ${
-          expanded ? '' : 'justify-center'
+        className={`flex min-h-0 flex-col overflow-y-auto ${
+          expanded ? 'flex-1' : 'shrink'
         }`}
       >
         <PrizeBanner tier={tier} text={copy.banner} />

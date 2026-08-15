@@ -11,9 +11,9 @@ interface FeedbackPanelProps {
 /** 'A'/'O'는 모음으로 끝나서 '예요', 'X'(엑스)는 자음으로 끝나서 '이에요'. */
 const VOWEL_ENDING_LABELS: ReadonlySet<string> = new Set(['A', 'B', 'C', 'D', 'O'])
 
-/* The reference system's callout idiom (4px accent bar on the left + a pale
-   tint) applied to the correct/incorrect pair. The design system has no
-   semantic success/error colours, so emerald/rose stay as they were. */
+/* 레퍼런스 시스템의 콜아웃 관용구(왼쪽 4px 강조 바 + 옅은 배경)를
+   정답/오답 쌍에 적용했다. 디자인 시스템에는 성공/실패 의미색이 없어서
+   emerald/rose는 원래대로 둔다. */
 const TONE = {
   correct: 'border-emerald-200 border-l-emerald-600 bg-emerald-50',
   wrong: 'border-rose-200 border-l-rose-600 bg-rose-50',

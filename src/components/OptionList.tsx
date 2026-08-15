@@ -24,14 +24,13 @@ function toState(
 }
 
 /**
- * The absence of `min-h-0` here is the whole fix.
+ * 여기에 `flex-1` / `min-h-0` 이 **없는 것**이 레이아웃 버그 수정의 핵심이다.
  *
- * Each OptionButton carries a min-height (its tap target), so it refuses to
- * shrink past it. With `min-h-0` on this group, only the group's *box* shrank
- * below that floor while the buttons themselves kept their height and painted
- * outside the box, straight over the sibling feedback panel. Without it the
- * group's automatic minimum size is its content, so it always encloses its
- * children and a height shortfall turns into parent scroll, never overlap.
+ * OptionButton은 각자 min-height(탭 타깃)를 갖고 있어 그 아래로는 줄지 않는다.
+ * 이 그룹이 `flex-1 min-h-0` 이었을 때는 그룹의 '박스'만 그 하한 아래로 줄고
+ * 버튼들은 높이를 유지한 채 박스 밖으로 그려져, 옆에 있는 피드백 패널 위를
+ * 그대로 덮어버렸다. 내용 크기대로 두면 그룹이 항상 자식을 감싸므로,
+ * 높이가 모자라도 부모 스크롤이 될 뿐 겹침은 발생할 수 없다.
  */
 export function OptionList({ question, selected, revealed, onSelect }: OptionListProps) {
   const isOx = question.format === 'ox'
@@ -40,11 +39,7 @@ export function OptionList({ question, selected, revealed, onSelect }: OptionLis
     <div
       role="group"
       aria-label="보기"
-      className={
-        isOx
-          ? 'grid flex-1 grid-cols-2 gap-3'
-          : 'flex flex-1 flex-col gap-2.5 short:gap-2'
-      }
+      className={isOx ? 'grid grid-cols-2 gap-3' : 'flex flex-col gap-2.5 short:gap-2'}
     >
       {question.options.map((text, index) => (
         <OptionButton

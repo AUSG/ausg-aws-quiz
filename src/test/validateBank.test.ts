@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { questions } from '../data/questions'
 import { validateBank, LIMITS } from '../data/validateBank'
 import { CATEGORIES, type Question } from '../data/types'
+import { LEAD_CATEGORY } from '../lib/pickSession'
 
 const base: Question = {
   id: 'x-01',
@@ -12,6 +13,7 @@ const base: Question = {
   options: ['가', '나', '다', '라'],
   answerIndex: 0,
   explanation: '테스트용 해설입니다.',
+  hint: '테스트용 힌트입니다.',
 }
 
 describe('실제 문제 은행', () => {
@@ -19,20 +21,28 @@ describe('실제 문제 은행', () => {
     expect(validateBank(questions)).toEqual([])
   })
 
-  it('6개 카테고리 × 6문항 = 36문항이다', () => {
-    expect(questions).toHaveLength(36)
+  it('AWS 카테고리는 6문항씩, 커뮤니티는 8문항이다', () => {
+    expect(questions).toHaveLength(44)
     for (const category of CATEGORIES) {
-      expect(questions.filter((q) => q.category === category)).toHaveLength(6)
+      const expected = category === LEAD_CATEGORY ? 8 : 6
+      expect(questions.filter((q) => q.category === category)).toHaveLength(expected)
     }
   })
 
-  it('카테고리마다 난이도 1/2/3이 2문항씩 있다', () => {
+  it('카테고리마다 난이도 1/2/3이 최소 2문항씩 있다', () => {
     for (const category of CATEGORIES) {
       const pool = questions.filter((q) => q.category === category)
       for (const difficulty of [1, 2, 3] as const) {
-        expect(pool.filter((q) => q.difficulty === difficulty)).toHaveLength(2)
+        expect(pool.filter((q) => q.difficulty === difficulty).length).toBeGreaterThanOrEqual(2)
       }
     }
+  })
+
+  // 리드 카테고리는 매 세션 1번 자리를 고정으로 가져간다. 난이도 1이 얕으면
+  // 줄 서서 앞사람 화면을 보던 사람이 같은 첫 문제를 그대로 다시 만난다.
+  it('리드 카테고리는 1번 자리를 돌릴 난이도 1 문항이 넉넉하다', () => {
+    const lead = questions.filter((q) => q.category === LEAD_CATEGORY && q.difficulty === 1)
+    expect(lead.length).toBeGreaterThanOrEqual(4)
   })
 
   it('O/X 문항이 세션마다 한두 개 나올 만큼 섞여 있다', () => {
@@ -89,6 +99,29 @@ describe('validateBank', () => {
   it('빈 해설을 잡아낸다', () => {
     const errors = validateBank([{ ...base, explanation: '   ' }])
     expect(errors.some((e) => e.includes('해설이 비어 있음'))).toBe(true)
+  })
+
+  it('빈 힌트를 잡아낸다', () => {
+    const errors = validateBank([{ ...base, hint: '   ' }])
+    expect(errors.some((e) => e.includes('힌트가 비어 있음'))).toBe(true)
+  })
+
+  it('너무 긴 힌트를 잡아낸다', () => {
+    const errors = validateBank([{ ...base, hint: '가'.repeat(LIMITS.hint + 1) }])
+    expect(errors.some((e) => e.includes('힌트가'))).toBe(true)
+  })
+
+  // 힌트가 정답을 그대로 말하면 힌트가 아니라 정답 공개다.
+  it('힌트에 정답 보기가 그대로 들어가면 잡아낸다', () => {
+    const errors = validateBank([{ ...base, hint: '정답은 가 예요' }])
+    expect(errors.some((e) => e.includes('그대로 들어 있음'))).toBe(true)
+  })
+
+  it('ox 문항은 O/X가 힌트에 있어도 걸리지 않는다', () => {
+    const errors = validateBank([
+      { ...base, format: 'ox', options: ['O', 'X'], answerIndex: 0, hint: 'OS 패치를 떠올려요' },
+    ])
+    expect(errors.some((e) => e.includes('그대로 들어 있음'))).toBe(false)
   })
 
   it('정답 위치가 한쪽에 쏠리면 잡아낸다', () => {

@@ -32,6 +32,7 @@ export function App() {
             selected={quiz.selected}
             revealed={quiz.revealed}
             isLast={quiz.isLast}
+            hintDelayMs={config.hintDelayMs}
             onAnswer={quiz.answer}
             onNext={quiz.next}
           />

@@ -37,6 +37,18 @@ describe('readBoothConfig', () => {
     expect(readBoothConfig('?idle=30').idleResetMs).toBe(30_000)
   })
 
+  // 대기줄이 생기면 스태프가 제일 먼저 끌 만한 값이다.
+  it('?hint= 로 힌트 공개 지연을 조절한다 (밀리초)', () => {
+    expect(readBoothConfig('?hint=0').hintDelayMs).toBe(0)
+    expect(readBoothConfig('?hint=1200').hintDelayMs).toBe(1200)
+  })
+
+  it('힌트 지연을 0~3000ms로 제한한다', () => {
+    expect(readBoothConfig('?hint=-5').hintDelayMs).toBe(0)
+    expect(readBoothConfig('?hint=99999').hintDelayMs).toBe(3000)
+    expect(readBoothConfig('?hint=abc').hintDelayMs).toBe(SESSION.hintDelayMs)
+  })
+
   it('?kiosk=0 으로 키오스크 모드를 끌 수 있다', () => {
     expect(readBoothConfig('?kiosk=0').kiosk).toBe(false)
     expect(readBoothConfig('?kiosk=1').kiosk).toBe(true)

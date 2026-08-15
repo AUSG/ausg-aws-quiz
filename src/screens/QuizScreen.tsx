@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react'
 import type { Question } from '../data/types'
 import { optionLabel } from '../data/types'
 import { Card } from '../components/Card'
 import { CategoryChip } from '../components/CategoryChip'
 import { FeedbackPanel } from '../components/FeedbackPanel'
+import { HintCallout, HintPrompt, type HintStatus } from '../components/HintPanel'
 import { OptionList } from '../components/OptionList'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { ProgressBar } from '../components/ProgressBar'
@@ -15,6 +17,8 @@ interface QuizScreenProps {
   readonly selected: number | null
   readonly revealed: boolean
   readonly isLast: boolean
+  /** 힌트 공개 지연(ms). 0이면 타이머 없이 즉시 뜬다. */
+  readonly hintDelayMs: number
   onAnswer: (optionIndex: number) => void
   onNext: () => void
 }
@@ -35,10 +39,30 @@ export function QuizScreen({
   selected,
   revealed,
   isLast,
+  hintDelayMs,
   onAnswer,
   onNext,
 }: QuizScreenProps) {
   const isCorrect = selected === question.answerIndex
+
+  // 불리언이 아니라 '어느 문제에서 힌트를 열었는지'를 저장한다.
+  // 그러면 문제가 바뀔 때 저절로 초기화되어, 2번 문제가 1번 문제의 힌트를
+  // 띄운 채 열리거나 앞 문제의 타이머가 뒤늦게 터질 일이 없다.
+  const [hintFor, setHintFor] = useState<{ id: string; ready: boolean } | null>(null)
+  const active = hintFor?.id === question.id ? hintFor : null
+  const hintStatus: HintStatus = active === null ? 'idle' : active.ready ? 'shown' : 'loading'
+
+  // 지연은 여기 한 곳에서만 일어난다. 문항이 바뀌면 hintStatus가 'idle'로
+  // 떨어지면서 cleanup이 타이머를 걷어가므로, 앞 문제의 타이머가 뒤늦게
+  // 터져 다음 문제 위에 힌트를 띄우는 일이 없다.
+  useEffect(() => {
+    if (hintStatus !== 'loading') return
+    const timer = window.setTimeout(
+      () => setHintFor((h) => (h === null || h.ready ? h : { ...h, ready: true })),
+      hintDelayMs,
+    )
+    return () => window.clearTimeout(timer)
+  }, [hintStatus, hintDelayMs])
 
   return (
     <Card className="h-full max-h-full">
@@ -57,7 +81,7 @@ export function QuizScreen({
           {question.prompt}
         </h1>
 
-        <div className="mt-4 flex flex-1 flex-col short:mt-3">
+        <div className="mt-4 short:mt-3">
           <OptionList
             question={question}
             selected={selected}
@@ -65,6 +89,9 @@ export function QuizScreen({
             onSelect={onAnswer}
           />
         </div>
+
+        {/* Hint and explanation share one slot; they are never both visible. */}
+        {revealed ? null : <HintCallout hint={question.hint} status={hintStatus} />}
 
         <FeedbackPanel
           revealed={revealed}
@@ -81,9 +108,12 @@ export function QuizScreen({
         {revealed ? (
           <PrimaryButton onClick={onNext}>{isLast ? '결과 보기' : '다음 문제'}</PrimaryButton>
         ) : (
-          <p className="w-full text-center text-base font-bold text-asb-gray">
-            답을 고르면 바로 정답을 알려드려요
-          </p>
+          <HintPrompt
+            status={hintStatus}
+            // hintDelayMs가 0이면 타이머를 아예 만들지 않는다. 지연을 끈다는 건
+            // '아주 짧게 기다린다'가 아니라 '기다리지 않는다'여야 한다.
+            onShow={() => setHintFor({ id: question.id, ready: hintDelayMs <= 0 })}
+          />
         )}
       </div>
     </Card>

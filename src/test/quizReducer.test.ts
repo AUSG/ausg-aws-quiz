@@ -21,6 +21,7 @@ function makeQuestion(id: string, answerIndex = 0): Question {
     options: ['가', '나', '다', '라'],
     answerIndex,
     explanation: '해설',
+    hint: '힌트',
   }
 }
 
