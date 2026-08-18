@@ -3,9 +3,7 @@ import {
   MAX_PRIZE_WEIGHT,
   MIN_PRIZE_WEIGHT,
   type PrizeCode,
-  type PrizeInventoryResponse,
 } from '../src/lib/prizes'
-import { getPrizeInventory } from './prize-store'
 
 export const MAX_PRIZE_QUANTITY = 999
 export const MAX_PRIZE_LABEL_LENGTH = 30
@@ -26,7 +24,7 @@ interface QuantityRow {
 export async function createPrize(
   db: D1Database,
   input: CreatePrizeInput,
-): Promise<PrizeInventoryResponse> {
+): Promise<void> {
   const label = input.label.trim()
   if (label.length === 0 || label.length > MAX_PRIZE_LABEL_LENGTH) {
     throw new Error('INVALID_PRIZE_LABEL')
@@ -55,15 +53,13 @@ export async function createPrize(
       )
       .bind(input.quantity, code, input.quantity),
   ])
-
-  return getPrizeInventory(db)
 }
 
 export async function setPrizeRemaining(
   db: D1Database,
   code: PrizeCode,
   targetRemaining: number,
-): Promise<PrizeInventoryResponse> {
+): Promise<void> {
   if (!isPrizeCode(code)) throw new Error('INVALID_PRIZE_CODE')
   assertQuantity(targetRemaining)
 
@@ -74,12 +70,21 @@ export async function setPrizeRemaining(
     if (!current) throw new Error('PRIZE_NOT_FOUND')
     if (current.unlimited === 1) throw new Error('UNLIMITED_PRIZE_QUANTITY')
     if (current.remaining === null) throw new Error('INVALID_STORED_REMAINING')
-    if (current.remaining === targetRemaining) return getPrizeInventory(db)
+    if (current.remaining === targetRemaining) return
 
-    if (current.remaining < targetRemaining) {
-      await addStockUnits(db, code, targetRemaining - current.remaining)
-    } else {
-      await removeUnclaimedStockUnits(db, code, current.remaining - targetRemaining)
+    try {
+      if (current.remaining < targetRemaining) {
+        await addStockUnits(db, code, targetRemaining - current.remaining)
+      } else {
+        await removeUnclaimedStockUnits(db, code, current.remaining - targetRemaining)
+      }
+    } catch (error) {
+      // 읽은 뒤 스핀이 슬롯을 가져가거나 다른 관리자 요청이 슬롯을 바꾸면,
+      // 해당 쓰기가 일부만 반영되었을 수 있다. 최신 집계에서 다시 수렴시킨다.
+      if (error instanceof Error && error.message === 'INVENTORY_UPDATE_CONFLICT') {
+        continue
+      }
+      throw error
     }
   }
 
@@ -91,7 +96,7 @@ export async function setPrizeDistribution(
   code: PrizeCode,
   enabled: boolean,
   weight: number,
-): Promise<PrizeInventoryResponse> {
+): Promise<void> {
   if (!isPrizeCode(code)) throw new Error('INVALID_PRIZE_CODE')
   if (
     !Number.isInteger(weight) ||
@@ -107,7 +112,6 @@ export async function setPrizeDistribution(
     .run()
   if (!result.success) throw new Error('PRIZE_DISTRIBUTION_UPDATE_FAILED')
   if (result.meta.changes !== 1) throw new Error('PRIZE_NOT_FOUND')
-  return getPrizeInventory(db)
 }
 
 async function readQuantity(db: D1Database, code: PrizeCode): Promise<QuantityRow | null> {
@@ -133,11 +137,12 @@ async function addStockUnits(db: D1Database, code: PrizeCode, amount: number): P
        INSERT INTO prize_stock_units (prize_code, stock_slot)
        SELECT ?, base.max_slot + offsets.value
        FROM base, offsets
-       WHERE offsets.value <= ?`,
+       WHERE offsets.value <= ?
+       RETURNING stock_slot`,
     )
     .bind(amount, code, code, amount)
-    .run()
-  if (!result.success || result.meta.changes !== amount) {
+    .all<{ stock_slot: number }>()
+  if (!result.success || result.results.length !== amount) {
     throw new Error('INVENTORY_UPDATE_CONFLICT')
   }
 }
@@ -151,20 +156,19 @@ async function removeUnclaimedStockUnits(
     .prepare(
       `DELETE FROM prize_stock_units
        WHERE prize_code = ?
+         AND claimed = 0
          AND stock_slot IN (
-           SELECT stock.stock_slot
-           FROM prize_stock_units AS stock
-           LEFT JOIN prize_wins AS wins
-             ON wins.prize_code = stock.prize_code
-            AND wins.stock_slot = stock.stock_slot
-           WHERE stock.prize_code = ? AND wins.id IS NULL
-           ORDER BY stock.stock_slot DESC
+           SELECT stock_slot
+           FROM prize_stock_units
+           WHERE prize_code = ? AND claimed = 0
+           ORDER BY stock_slot DESC
            LIMIT ?
-         )`,
+         )
+       RETURNING stock_slot`,
     )
     .bind(code, code, amount)
-    .run()
-  if (!result.success || result.meta.changes !== amount) {
+    .all<{ stock_slot: number }>()
+  if (!result.success || result.results.length !== amount) {
     throw new Error('INVENTORY_UPDATE_CONFLICT')
   }
 }

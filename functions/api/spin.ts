@@ -1,6 +1,6 @@
 import type { SpinRequest } from '../../src/lib/prizes'
 import { API_HEADERS } from '../../worker/http'
-import { awardPrize, toPublicSpinResponse } from '../../worker/prize-store'
+import { awardPrize } from '../../worker/prize-store'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const MAX_BODY_BYTES = 1024
@@ -42,7 +42,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     }
 
     const result = await awardPrize(env.DB, input)
-    return Response.json(toPublicSpinResponse(result), { headers: API_HEADERS })
+    return Response.json(result, { headers: API_HEADERS })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     console.error(

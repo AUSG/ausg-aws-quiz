@@ -58,7 +58,7 @@ App.tsx                 ← quiz + roulette navigation state; fetches D1 questio
  ├─ functions/api/admin/prizes.ts           ← admin inventory mutations
  ├─ worker/prize-store.ts                   ← D1 inventory + idempotent award logic
  ├─ worker/admin-prize-store.ts             ← add prizes + adjust unclaimed slots
- └─ migrations/{0001,0002,0003}_*.sql       ← stock, wins, settings, distribution
+ └─ migrations/{0001,0002,0003,0004}_*.sql  ← stock, settings, distribution, counters
 ```
 
 Key invariants:
@@ -91,6 +91,11 @@ Key invariants:
   so browser retries replay the stored result without consuming another slot. When every finite
   slot is claimed, the available set contains only unlimited stickers. Admin quantity decreases
   remove only unclaimed slots, so previous wins remain append-only.
+- **Live inventory does not require full-log scans.** Public catalog and award candidates read the
+  latest D1 rows on every request with `Cache-Control: no-store`. Slot `claimed` state,
+  `prize_stock_counts`, and `booth_stats` are updated by the same database write that records or
+  removes a win, so dynamic products and quantities stay current without `COUNT(*)` over the win
+  log. The `(prize_code, claimed, stock_slot)` index finds the next free slot directly.
 - **At least one product stays enabled.** D1 rejects disabling the final enabled product. An
   enabled finite product can still have zero stock, so `/admin` warns when nothing is awardable
   and `/api/spin` returns 409 instead of inventing a result.

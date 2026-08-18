@@ -10,11 +10,12 @@ function spinRequest(attemptId = crypto.randomUUID()): SpinRequest {
 
 describe('D1 admin prize inventory', () => {
   it('registers a new finite prize with its color and starting quantity', async () => {
-    const inventory = await createPrize(env.DB, {
+    await createPrize(env.DB, {
       label: '키링',
       quantity: 5,
       color: '#7c3aed',
     })
+    const inventory = await getPrizeInventory(env.DB)
     const prize = inventory.prizes.find((item) => item.label === '키링')
 
     expect(prize).toMatchObject({
@@ -33,13 +34,15 @@ describe('D1 admin prize inventory', () => {
     const tumblerPicker: PrizePicker = () => 'tumbler'
     await awardPrize(env.DB, spinRequest(attemptId), tumblerPicker)
 
-    let inventory = await setPrizeRemaining(env.DB, 'tumbler', 7)
+    await setPrizeRemaining(env.DB, 'tumbler', 7)
+    let inventory = await getPrizeInventory(env.DB)
     expect(inventory.prizes.find((prize) => prize.code === 'tumbler')).toMatchObject({
       remaining: 7,
       initialQuantity: 8,
     })
 
-    inventory = await setPrizeRemaining(env.DB, 'tumbler', 12)
+    await setPrizeRemaining(env.DB, 'tumbler', 12)
+    inventory = await getPrizeInventory(env.DB)
     expect(inventory.prizes.find((prize) => prize.code === 'tumbler')).toMatchObject({
       remaining: 12,
       initialQuantity: 13,
@@ -48,15 +51,16 @@ describe('D1 admin prize inventory', () => {
     const replay = await awardPrize(env.DB, spinRequest(attemptId), () => 'sticker')
     expect(replay.replayed).toBe(true)
     expect(replay.prize.code).toBe('tumbler')
-    expect(replay.totalWins).toBe(1)
+    expect((await getPrizeInventory(env.DB)).totalWins).toBe(1)
   })
 
   it('keeps a zero-quantity prize in the wheel catalog but excludes it from awards', async () => {
-    const created = await createPrize(env.DB, {
+    await createPrize(env.DB, {
       label: '품절 키링',
       quantity: 0,
       color: '#334455',
     })
+    const created = await getPrizeInventory(env.DB)
     const soldOut = created.prizes.find((prize) => prize.label === '품절 키링')
     expect(soldOut?.remaining).toBe(0)
 
@@ -69,6 +73,17 @@ describe('D1 admin prize inventory', () => {
     }
     const result = await awardPrize(env.DB, spinRequest(), picker)
     expect(result.prize.code).toBe('sticker')
+
+    await setPrizeRemaining(env.DB, soldOut!.code, 2)
+    const restocked = await awardPrize(env.DB, spinRequest(), (available) => {
+      expect(available.some((prize) => prize.code === soldOut?.code)).toBe(true)
+      return soldOut!.code
+    })
+    expect(restocked.prize.code).toBe(soldOut?.code)
+    expect(
+      (await getPrizeInventory(env.DB)).prizes.find((prize) => prize.code === soldOut?.code)
+        ?.remaining,
+    ).toBe(1)
   })
 
   it('does not allow editing the unlimited sticker quantity', async () => {
@@ -80,13 +95,15 @@ describe('D1 admin prize inventory', () => {
   })
 
   it('changes distribution weight and hides a disabled prize from the public wheel', async () => {
-    let inventory = await setPrizeDistribution(env.DB, 'notebook', true, 7)
+    await setPrizeDistribution(env.DB, 'notebook', true, 7)
+    let inventory = await getPrizeInventory(env.DB)
     expect(inventory.prizes.find((prize) => prize.code === 'notebook')).toMatchObject({
       enabled: true,
       weight: 7,
     })
 
-    inventory = await setPrizeDistribution(env.DB, 'notebook', false, 7)
+    await setPrizeDistribution(env.DB, 'notebook', false, 7)
+    inventory = await getPrizeInventory(env.DB)
     expect(inventory.prizes.find((prize) => prize.code === 'notebook')?.enabled).toBe(false)
     expect((await getPrizeCatalog(env.DB)).prizes.some((prize) => prize.code === 'notebook')).toBe(false)
   })
@@ -98,5 +115,18 @@ describe('D1 admin prize inventory', () => {
     await expect(setPrizeDistribution(env.DB, 'sticker', false, 1)).rejects.toThrow(
       /LAST_ENABLED_PRIZE/,
     )
+  })
+
+  it('keeps live counters valid when a quantity edit races with a spin', async () => {
+    await Promise.all([
+      setPrizeRemaining(env.DB, 'tumbler', 1),
+      awardPrize(env.DB, spinRequest(), () => 'tumbler'),
+    ])
+
+    const inventory = await getPrizeInventory(env.DB)
+    const tumbler = inventory.prizes.find((prize) => prize.code === 'tumbler')
+    expect(tumbler?.remaining === 0 || tumbler?.remaining === 1).toBe(true)
+    expect(tumbler?.initialQuantity).toBe((tumbler?.remaining ?? 0) + 1)
+    expect(inventory.totalWins).toBe(1)
   })
 })

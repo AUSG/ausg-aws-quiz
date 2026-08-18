@@ -51,10 +51,8 @@ export interface SpinResponse extends PrizeCatalogResponse {
   readonly replayed: boolean
 }
 
-export interface PrizeAwardResult extends PrizeInventoryResponse {
-  readonly prize: PrizeInventoryItem
-  readonly replayed: boolean
-}
+/** 서버 내부 추첨 결과도 공개 응답과 같은 최소 정보만 유지한다. */
+export type PrizeAwardResult = SpinResponse
 
 const PRIZE_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i

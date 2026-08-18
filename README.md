@@ -101,7 +101,9 @@ AUSGCON 공식 GitHub 저장소의 근거를 남긴다. `validateBank`는 출처
 초기 재고는 `migrations/0001_prize_inventory.sql`에서 만들고,
 `migrations/0002_dynamic_prizes.sql`에서 운영 중 경품 추가와 수량 수정을 지원한다.
 `migrations/0003_booth_settings_and_prize_distribution.sql`은 퀴즈 문항 수와 경품별
-지급 여부·상대 가중치를 추가한다.
+지급 여부·상대 가중치를 추가한다. `migrations/0004_materialized_prize_counters.sql`은
+기존 당첨 기록과 재고를 보존하면서 슬롯 사용 여부·남은 수량·전체 당첨 수를 작은 집계
+행으로 옮긴다. 따라서 참가자 요청이 누적 `prize_wins` 전체를 반복해서 읽지 않는다.
 
 | 상품 | 초기 수량 | 소진 뒤 |
 |---|---:|---|
@@ -113,6 +115,9 @@ AUSGCON 공식 GitHub 저장소의 근거를 남긴다. `validateBank`는 출처
 같은 `attempt_id` 요청은 한 번만 기록된다. 응답이 끊겨 다시 눌러도 기존 당첨 결과를
 돌려주므로 재고가 두 번 줄지 않는다. 유한 상품에는 1~20번 재고 슬롯이 있고,
 DB 고유 제약이 같은 슬롯의 중복 당첨을 막아 마지막 한 개 아래로 내려가지 않는다.
+슬롯의 `claimed` 값과 `prize_stock_counts`는 당첨 INSERT와 같은 DB 문맥의 트리거에서
+즉시 갱신된다. 경품 목록·지급 여부·가중치·수량 API는 캐시하지 않고 `no-store`로
+응답하므로, 운영자가 변경한 값은 다음 참가자 요청부터 바로 반영된다.
 
 `/admin`은 이벤트 부스용으로 클라이언트에 하드코딩된 비밀번호 `2018`을 확인한다.
 같은 값의 API 헤더도 오입력 방지용으로 확인하지만, 공개 번들에서 볼 수 있으므로 강한
@@ -126,6 +131,8 @@ DB 고유 제약이 같은 슬롯의 중복 당첨을 막아 마지막 한 개 �
 ```bash
 npx wrangler d1 execute DB --remote --command \
   "SELECT code, enabled, weight, initial_quantity, remaining FROM prize_inventory_status ORDER BY code"
+npx wrangler d1 execute DB --remote --command \
+  "SELECT total_wins FROM booth_stats WHERE id = 1"
 npx wrangler d1 execute DB --remote --command \
   "SELECT question_count, updated_at FROM booth_settings WHERE id = 1"
 npx wrangler d1 execute DB --remote --command \
