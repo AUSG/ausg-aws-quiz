@@ -11,18 +11,18 @@ interface ResultScreenProps {
   readonly total: number
   readonly results: readonly QuizResultItem[]
   readonly prizeThreshold: number
-  onRestart: () => void
+  onSpin: () => void
 }
 
 const RECAP_ID = 'answer-recap'
 
-/** 스태프용 화면. 배너가 가장 크고, 색만으로 상품 지급 여부가 읽혀야 한다. */
+/** 점수를 확인한 뒤 모든 참가자가 룰렛으로 넘어가는 화면. */
 export function ResultScreen({
   score,
   total,
   results,
   prizeThreshold,
-  onRestart,
+  onSpin,
 }: ResultScreenProps) {
   const [expanded, setExpanded] = useState(false)
   const tier = toTier(score, total, prizeThreshold)
@@ -30,7 +30,7 @@ export function ResultScreen({
 
   return (
     // 접힌 상태에서는 카드가 내용만큼만 차지하고 App이 가운데 정렬한다.
-    // 시작 화면과 같은 방식이다 — 3문항 복습은 폰 화면을 채우지 못하고,
+    // 시작 화면과 같은 방식이다 — 5문항 복습도 접힌 상태에서는 폰 화면을 채우지 못하고,
     // 억지로 늘리면 배너 위에 큰 공백이 생긴다. 펼치는 건 명시적인 탭이고,
     // 그때 비로소 카드가 전체 높이를 차지해 문항별 복습을 내부 스크롤한다.
     <Card className={expanded ? 'h-full max-h-full' : 'max-h-full'}>
@@ -55,7 +55,7 @@ export function ResultScreen({
       </div>
 
       <div className="mt-5 flex shrink-0 flex-col gap-2.5 short:mt-4">
-        <PrimaryButton onClick={onRestart}>다시 풀기</PrimaryButton>
+        <PrimaryButton onClick={onSpin}>굿즈 룰렛 돌리기</PrimaryButton>
         <PrimaryButton
           variant="secondary"
           ariaExpanded={expanded}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { questions } from '../data/questions'
-import { LEAD_CATEGORY, pickSession } from '../lib/pickSession'
+import { CATEGORIES } from '../data/types'
+import { pickSession } from '../lib/pickSession'
 import { pickOne, shuffle } from '../lib/shuffle'
 import { seededRng } from './seededRng'
 
@@ -47,7 +48,7 @@ describe('pickSession', () => {
     }
   })
 
-  it('문항 수를 3으로 줄여도 동작한다 (현장 ?n=3 대응)', () => {
+  it('기본 문항 수 3개에서도 카테고리와 난이도를 분산한다', () => {
     for (const seed of SEEDS.slice(0, 50)) {
       const picked = pickSession(questions, { count: 3, rng: seededRng(seed) })
       expect(picked).toHaveLength(3)
@@ -56,47 +57,20 @@ describe('pickSession', () => {
     }
   })
 
-  // 부스에서 방금 들은 커뮤니티 소개와 첫 문제가 이어져야 한다.
-  it('1번 문제는 항상 커뮤니티에서 나온다', () => {
-    for (const count of [3, 5, 10]) {
-      for (const seed of SEEDS.slice(0, 50)) {
-        const picked = pickSession(questions, { count, rng: seededRng(seed) })
-        expect(picked[0]?.category).toBe(LEAD_CATEGORY)
-      }
-    }
-  })
-
-  it('커뮤니티 1번 문제가 한 문제로 고정되지 않는다', () => {
-    const firsts = new Set(
-      SEEDS.map((seed) => pickSession(questions, { count: 3, rng: seededRng(seed) })[0]?.id),
+  it('모든 카테고리가 첫 문제로 나올 수 있다', () => {
+    const firstCategories = new Set(
+      SEEDS.map((seed) => pickSession(questions, { count: 5, rng: seededRng(seed) })[0]?.category),
     )
-    expect(firsts.size).toBeGreaterThanOrEqual(3)
+    expect(firstCategories).toEqual(new Set(CATEGORIES))
   })
 
-  // 2번 이후까지 커뮤니티가 차지하면 AWS 문제가 밀려난다.
-  it('커뮤니티는 세션당 한 문제만 차지한다', () => {
-    for (const seed of SEEDS) {
-      const picked = pickSession(questions, { count: 3, rng: seededRng(seed) })
-      expect(picked.filter((q) => q.category === LEAD_CATEGORY)).toHaveLength(1)
-    }
-  })
-
-  it('리드 카테고리를 끄면 커뮤니티가 1번에 고정되지 않는다', () => {
-    const firsts = new Set(
-      SEEDS.map(
-        (seed) =>
-          pickSession(questions, { count: 3, rng: seededRng(seed), leadCategory: null })[0]
-            ?.category,
+  it('전체 문제 은행의 모든 문항이 출제 가능하다', () => {
+    const reachable = new Set(
+      SEEDS.flatMap((seed) =>
+        pickSession(questions, { count: 5, rng: seededRng(seed) }).map((q) => q.id),
       ),
     )
-    expect(firsts.size).toBeGreaterThan(1)
-  })
-
-  it('리드 카테고리 문항이 없는 은행에서도 throw하지 않는다', () => {
-    const noCommunity = questions.filter((q) => q.category !== LEAD_CATEGORY)
-    const picked = pickSession(noCommunity, { count: 3, rng: seededRng(21) })
-    expect(picked).toHaveLength(3)
-    expect(picked.every((q) => q.category !== LEAD_CATEGORY)).toBe(true)
+    expect(reachable).toEqual(new Set(questions.map((q) => q.id)))
   })
 
   it('빈 은행에서는 빈 배열을 준다', () => {
@@ -109,7 +83,7 @@ describe('pickSession', () => {
   })
 
   it('기본 옵션으로도 동작한다', () => {
-    expect(pickSession(questions)).toHaveLength(5)
+    expect(pickSession(questions)).toHaveLength(3)
   })
 
   // 아래 두 개는 "문제 은행이 망가져도 절대 throw하지 않는다"는 보장을 지킨다.
@@ -128,7 +102,7 @@ describe('pickSession', () => {
   })
 
   it('카테고리가 하나뿐이어도 개수를 채운다', () => {
-    const oneCategory = questions.filter((q) => q.category === '보안')
+    const oneCategory = questions.filter((q) => q.category === 'AWSKRUG 활동')
     const picked = pickSession(oneCategory, { count: 5, rng: seededRng(13) })
     expect(picked).toHaveLength(5)
     expect(new Set(picked.map((q) => q.id)).size).toBe(5)

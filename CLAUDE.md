@@ -7,10 +7,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 nvm use              # Node 22 (.nvmrc)
 npm run dev          # Vite dev server, http://localhost:5173
-npm test             # vitest run (all tests)
+npm run dev:pages    # production build + local D1 migration + Pages Functions
+npm test             # frontend tests
+npm run test:worker  # Workers runtime D1/API tests
 npm run test:watch
 npm run coverage     # v8 coverage; fails below 80% on all four metrics
-npm run build        # tsc -b && vite build — same command Vercel runs
+npm run build        # frontend + worker typecheck, then Vite build
 ```
 
 Run a single test file or case:
@@ -28,11 +30,11 @@ without checking this; either add the config or use `npm run build` + `npm test`
 
 ## What this is
 
-A static single-page React app for a hackathon booth: a visitor picks up a tablet, answers
-3 AWS Cloud Practitioner-level questions in ~30 seconds, and gets a prize for a perfect score.
-No backend, no database, no environment variables, no persistence, no analytics. PWA caching
-(`vite-plugin-pwa`, autoUpdate + skipWaiting) means the app keeps working after the venue wifi
-drops. Deployed to Vercel on push to `main`.
+A React app for the Codex Community Hackathon community booth: a visitor picks up a tablet,
+answers 3 questions by default (admin-configurable from 3 to 5) about AUSG, AWSKRUG, and AUSGCON,
+and then spins a goods roulette regardless of score. Static assets run on Cloudflare Pages; public roulette APIs and
+`/api/admin/prizes` are Pages Functions backed by D1. PWA caching keeps the quiz itself available after venue wifi drops,
+but the roulette intentionally requires a live network connection so inventory stays authoritative.
 
 The booth context drives nearly every design decision, and the reasoning is written into
 source comments in Korean. **Read the comment above a function before changing it** — most
@@ -44,12 +46,19 @@ for 30 seconds while standing up."
 State flows one direction from `App.tsx` down:
 
 ```
-App.tsx                 ← the only place state lives; reads URL config once
- ├─ config.ts           ← readBoothConfig(search): ?n= ?prize= ?idle= ?kiosk=
+App.tsx                 ← quiz + roulette navigation state; fetches D1 question count
+ ├─ config.ts           ← D1 default + URL overrides: ?n= ?prize= ?idle= ?kiosk=
  ├─ state/useQuiz.ts    ← wraps quizReducer; the ONLY place randomness happens
  │   └─ state/quizReducer.ts   ← pure reducer + selectors (START/ANSWER/NEXT/RESET)
  ├─ hooks/useIdleReset.ts      ← kiosk hygiene: reset after idle timeout
- └─ screens/{Start,Quiz,Result}Screen.tsx   ← pure props-only presentational
+ ├─ screens/{Start,Quiz,Result}Screen.tsx   ← quiz flow
+ ├─ screens/RouletteScreen.tsx             ← inventory, one spin, result animation
+ ├─ screens/AdminScreen.tsx                ← /admin client password + prize controls
+ ├─ functions/api/{config,prizes,spin}.ts   ← public Pages Functions HTTP boundary
+ ├─ functions/api/admin/prizes.ts           ← admin inventory mutations
+ ├─ worker/prize-store.ts                   ← D1 inventory + idempotent award logic
+ ├─ worker/admin-prize-store.ts             ← add prizes + adjust unclaimed slots
+ └─ migrations/{0001,0002,0003,0004}_*.sql  ← stock, settings, distribution, counters
 ```
 
 Key invariants:
@@ -63,20 +72,47 @@ Key invariants:
 - **Question selection is not uniform random.** `lib/pickSession.ts` spreads categories across
   slots and orders questions by ascending difficulty, so a beginner doesn't lose on question 1
   and walk away. `selectSlot` degrades through preference tiers and never throws.
-- **Question 1 is always from `커뮤니티`** (`LEAD_CATEGORY` in `lib/pickSession.ts`), so the quiz
-  continues the AUSG/AWSKRUG intro the visitor just heard at the booth. It lands in display
-  position 1 for free: the difficulty plan's first slot is always 1, and the final sort is
-  ascending difficulty with pick-order as the tiebreak. Pass `leadCategory: null` to disable.
-- **Runtime tuning is via URL params, not redeploys.** `?prize=2` is the one staff reach for
-  most; `?idle=0` disables auto-reset for demos.
+- **No category owns question 1.** All six categories are shuffled for every session. The
+  default three-question session uses three distinct categories and difficulty slots `1,2,3`;
+  admin-selected 4–5 question sessions use the same spread logic.
+- **Question count is a D1 booth setting.** `/admin` stores 3–5; the app fetches it from
+  `/api/config` before showing Start. `?n=` remains a temporary per-device override.
+- **Runtime tuning is also available through URL params.** `?prize=2` changes only the high-score
+  result banner; everyone can spin. `?idle=0` disables auto-reset for demos.
+- **The server chooses the prize.** The client wheel never uses `Math.random()` for a result.
+  `prize-store.ts` uses rejection-sampled `crypto.getRandomValues()` and applies each enabled,
+  in-stock prize's integer relative weight (1–100).
+- **The public wheel API contains no stock counts or distribution settings.** It returns enabled
+  products for display, including sold-out products, but redacts `remaining`, `enabled`, and
+  `weight`. Disabled products are hidden. The client repeats products across wheel slices; the
+  server alone filters sold-out products from the actual draw.
+- **D1 is the stock authority.** Each finite physical item is a numbered stock-slot row, and
+  `(prize_code, stock_slot)` is unique in the append-only win log. `attempt_id` is also unique,
+  so browser retries replay the stored result without consuming another slot. When every finite
+  slot is claimed, the available set contains only unlimited stickers. Admin quantity decreases
+  remove only unclaimed slots, so previous wins remain append-only.
+- **Live inventory does not require full-log scans.** Public catalog and award candidates read the
+  latest D1 rows on every request with `Cache-Control: no-store`. Slot `claimed` state,
+  `prize_stock_counts`, and `booth_stats` are updated by the same database write that records or
+  removes a win, so dynamic products and quantities stay current without `COUNT(*)` over the win
+  log. The `(prize_code, claimed, stock_slot)` index finds the next free slot directly.
+- **At least one product stays enabled.** D1 rejects disabling the final enabled product. An
+  enabled finite product can still have zero stock, so `/admin` warns when nothing is awardable
+  and `/api/spin` returns 409 instead of inventing a result.
 
 ## The question bank
 
-Questions live in `src/data/questions.ts` — 44 questions across 7 categories. The 6 AWS
-categories hold 6 each (difficulty 1/2/3 × 2), so `pickSession`'s difficulty plan is always
-satisfiable. `커뮤니티` holds 8, with **four** at difficulty 1 rather than two: it owns slot 1
-of every session, and a shallower pool means someone waiting in line sees the same opening
-question they just watched the person ahead of them answer.
+Questions live in `src/data/questions.ts` — 38 questions across 6 community categories.
+`AUSG 활동`, `AWSKRUG 기본`, `AWSKRUG 활동`, `함께하기`, and `AUSGCON 2026` hold
+6 each (difficulty 1/2/3 × 2), so `pickSession`'s difficulty plan is always satisfiable.
+`AUSG 기본` holds 8, with **four** introductory questions at difficulty 1 rather than two.
+Because category order and difficulty slots are shuffled together across sessions, every bank
+question can be selected over repeated plays.
+
+Every real-bank question carries a `sourceUrl` pointing to an official AUSG/AWSKRUG page,
+official AWSKRUG Meetup listing, or the official AUSGCON repository. `validateBank` rejects
+missing, malformed, or non-HTTPS sources. The `AUSGCON 2026` block is an event-only pack;
+after the event, remove both that block and its entry in `CATEGORIES` before redeploying.
 
 `src/data/validateBank.ts` enforces the rules and `src/test/validateBank.test.ts` runs it
 against the real bank, so a bad question fails `npm test`:
@@ -89,6 +125,7 @@ against the real bank, so a bad question fails `npm test`:
 - Prompts must end with `?`; ids and prompts must be unique.
 - No answer index may hold more than 40% of `choice` questions (prevents guessing by position).
 - A hint must not contain the correct option's text verbatim.
+- Every question must carry a valid HTTPS official-source URL.
 - Every category needs at least one question at each difficulty.
 
 ## Fonts (the non-obvious part)
@@ -116,8 +153,9 @@ the build doesn't ship it and the service worker doesn't cache it — a test ass
 
 `components/HintPanel.tsx` presents the per-question hint as coming from Codex — Codex mark
 plus a "Codex" label on the callout, and a `Codex 힌트 보기` button. **The hints are static
-strings in the question bank; nothing is generated at runtime and no API is called.** Keep it
-that way: the app has no backend and must survive a dead venue network.
+strings in the question bank; nothing is generated at runtime and no API is called.** Keep the
+hint path static so quiz play survives a venue-network outage. The D1-backed roulette is the
+only part that requires the network.
 
 Pressing the button holds a `loading` state for `hintDelayMs` (default 700ms, tunable with
 `?hint=`) before the hint appears, so the Codex framing isn't contradicted by an instant
@@ -158,14 +196,15 @@ pinned next-button. Keeping the button outside the scroll area is what guarantee
 
 ## Testing
 
-Vitest + jsdom + Testing Library, 80% coverage thresholds enforced in `vitest.config.ts`
-(`questions.ts` and `main.tsx` excluded). Tests cover the reducer, `pickSession` determinism,
-URL config parsing, the real question bank, the full flow (`flow.test.tsx`), the hint panel,
-and font subset coverage.
+Vitest + jsdom + Testing Library cover the frontend. A separate Cloudflare Workers Vitest pool
+runs the Pages Function and D1 tests against Miniflare with real migrations. The worker suite
+must cover stock consumption, idempotent replay, the zero floor, sticker-only fallback,
+dynamic prize registration, admin quantity edits, and public stock-count redaction.
 
 ## Deploy
 
-Push to `main` → Vercel auto-deploys. If something breaks in production, **do not hotfix
-forward** — use Vercel Dashboard → Deployments → Instant Rollback first. Because the service
-worker is `autoUpdate` + `skipWaiting`, booth devices pick up the rolled-back version on the
-next refresh, but an already-open tab needs one manual refresh.
+Cloudflare Pages is configured by `wrangler.jsonc`; `DB` is the D1 binding. Apply remote
+migrations before the first deploy, then run `npm run deploy:pages`. Direct Upload includes the
+`functions/` directory automatically. `main.tsx` registers the `autoUpdate` + `skipWaiting`
+service worker through `virtual:pwa-register`, so a refresh that discovers a new or rolled-back
+build automatically reloads once when the new worker takes control.

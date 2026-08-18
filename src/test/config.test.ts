@@ -13,9 +13,14 @@ describe('readBoothConfig', () => {
     expect(config.prizeThreshold).toBe(2)
   })
 
-  it('문항 수를 3~10으로 제한한다', () => {
+  it('문항 수를 3~5로 제한한다', () => {
     expect(readBoothConfig('?n=1').questionCount).toBe(3)
-    expect(readBoothConfig('?n=99').questionCount).toBe(10)
+    expect(readBoothConfig('?n=99').questionCount).toBe(5)
+  })
+
+  it('D1에 저장된 문항 수를 기본값으로 쓰고 URL 값을 우선한다', () => {
+    expect(readBoothConfig('', 5).questionCount).toBe(5)
+    expect(readBoothConfig('?n=4', 5).questionCount).toBe(4)
   })
 
   it('커트라인이 문항 수를 넘지 못하게 한다', () => {
@@ -24,8 +29,9 @@ describe('readBoothConfig', () => {
   })
 
   it('문항 수를 줄이면 기본 커트라인도 함께 내려간다', () => {
-    // 기본 커트라인 4인데 문항이 3개면 아무도 상품을 못 받는 사고가 난다
+    // 기본 커트라인은 현재 문항 수와 같아서 만점 배너가 어긋나지 않는다.
     expect(readBoothConfig('?n=3').prizeThreshold).toBe(3)
+    expect(readBoothConfig('', 5).prizeThreshold).toBe(5)
   })
 
   it('숫자가 아닌 값은 무시하고 기본값을 쓴다', () => {
@@ -61,13 +67,13 @@ describe('buildDifficultyPlan', () => {
   })
 
   it('문항 수와 길이가 항상 같다', () => {
-    for (let count = 3; count <= 10; count++) {
+    for (let count = 3; count <= 5; count++) {
       expect(buildDifficultyPlan(count)).toHaveLength(count)
     }
   })
 
   it('항상 오름차순이고 가장 쉬운 문제로 시작한다', () => {
-    for (let count = 3; count <= 10; count++) {
+    for (let count = 3; count <= 5; count++) {
       const plan = buildDifficultyPlan(count)
       expect(plan[0]).toBe(1)
       for (let i = 1; i < plan.length; i++) {

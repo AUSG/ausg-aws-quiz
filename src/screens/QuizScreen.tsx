@@ -98,7 +98,6 @@ export function QuizScreen({
           isCorrect={isCorrect}
           correctLabel={optionLabel(question, question.answerIndex)}
           explanation={question.explanation}
-          service={question.service}
         />
       </div>
 

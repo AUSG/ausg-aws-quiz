@@ -1,5 +1,6 @@
 import { CATEGORIES, type Category, type Difficulty, type Question } from '../data/types'
 import { buildDifficultyPlan } from '../config'
+import { DEFAULT_QUESTION_COUNT } from './booth-settings'
 import { pickOne, shuffle } from './shuffle'
 
 export interface PickOptions {
@@ -7,23 +8,9 @@ export interface PickOptions {
   /** 테스트에서 시드 rng를 주입하기 위한 훅 */
   readonly rng?: () => number
   readonly difficultyPlan?: readonly Difficulty[]
-  /** 1번 슬롯에 우선 배정할 카테고리. null이면 전부 무작위 순서. */
-  readonly leadCategory?: Category | null
 }
 
-const DEFAULT_COUNT = 5
-
-/**
- * 첫 문제는 항상 커뮤니티에서 나온다.
- *
- * 부스에서 방금 AUSG·AWSKRUG 소개를 듣고 태블릿을 집은 사람이 첫 문제로
- * 그 이야기를 다시 만나야 소개와 퀴즈가 한 흐름이 된다. 카테고리를 그냥
- * 7개로 늘려두면 3문제 세션에서 커뮤니티가 한 번도 안 나오는 경우가 생긴다.
- *
- * 슬롯 0에 넣는 것만으로 화면에서도 1번이 되는 이유: 난이도 계획의 첫 칸이
- * 항상 1이고, 마지막 정렬이 난이도 오름차순 + 동점이면 뽑힌 순서이기 때문이다.
- */
-export const LEAD_CATEGORY: Category = '커뮤니티'
+const DEFAULT_COUNT = DEFAULT_QUESTION_COUNT
 
 function byCategory(bank: readonly Question[]): Map<Category, Question[]> {
   const map = new Map<Category, Question[]>()
@@ -83,25 +70,11 @@ function pickNearestDifficulty(
 }
 
 /**
- * 리드 카테고리를 맨 앞에 두고 나머지를 섞는다.
- * 리드 카테고리에 문항이 없으면 selectSlot이 은행 전체로 알아서 물러나므로
- * 여기서 은행을 들여다볼 필요가 없다.
- */
-function orderCategories(
-  lead: Category | null | undefined,
-  rng: () => number,
-): readonly Category[] {
-  const resolved = lead === undefined ? LEAD_CATEGORY : lead
-  if (resolved === null) return shuffle(CATEGORIES, rng)
-  return [resolved, ...shuffle(CATEGORIES.filter((c) => c !== resolved), rng)]
-}
-
-/**
  * 카테고리를 분산시키고 난이도를 오름차순으로 배치해 한 세션을 뽑는다.
  *
- * 순수 랜덤을 쓰지 않는 이유: 초보자가 네트워킹 5문제를 연속으로 받으면
- * 1번에서 틀리고 태블릿을 내려놓는다. 카테고리 분산은 부스 퀴즈를
- * 'AWS 한 바퀴 둘러보기'로 만들어 주기도 한다.
+ * 순수 랜덤을 쓰지 않는 이유: 한 세션에 AUSGCON 문제만 연속으로 나오면
+ * 두 커뮤니티의 전체 모습을 보기 어렵다. 카테고리를 분산해 AUSG, AWSKRUG,
+ * 공동 활동을 고루 만나게 한다.
  */
 export function pickSession(
   bank: readonly Question[],
@@ -114,7 +87,7 @@ export function pickSession(
   if (bank.length === 0) return []
 
   const pools = byCategory(bank)
-  const categoryOrder = orderCategories(options.leadCategory, rng)
+  const categoryOrder = shuffle(CATEGORIES, rng)
   const usedIds = new Set<string>()
   const usedTopics = new Set<string>()
   const picked: Question[] = []

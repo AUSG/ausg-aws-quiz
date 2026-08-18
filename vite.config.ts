@@ -14,9 +14,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'AWS 상식 퀴즈',
-        short_name: 'AWS 퀴즈',
-        description: 'AWS Cloud Practitioner 수준 3문제 퀴즈',
+        name: 'AUSG × AWSKRUG 퀴즈',
+        short_name: '커뮤니티 퀴즈',
+        description: 'AUSG와 AWSKRUG를 알아보고 굿즈 룰렛에 도전하는 3~5문제 퀴즈',
         lang: 'ko',
         start_url: './',
         display: 'standalone',

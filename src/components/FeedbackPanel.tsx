@@ -5,7 +5,6 @@ interface FeedbackPanelProps {
   /** 정답 보기의 라벨. choice → 'A'~'D', ox → 'O' | 'X' */
   readonly correctLabel: string
   readonly explanation: string
-  readonly service?: string
 }
 
 /** 'A'/'O'는 모음으로 끝나서 '예요', 'X'(엑스)는 자음으로 끝나서 '이에요'. */
@@ -30,7 +29,6 @@ export function FeedbackPanel({
   isCorrect,
   correctLabel,
   explanation,
-  service,
 }: FeedbackPanelProps) {
   return (
     <div role="status" aria-live="polite" aria-atomic="true">
@@ -51,11 +49,6 @@ export function FeedbackPanel({
           <p className="mt-1.5 text-base leading-relaxed text-asb-text break-keep short:mt-1 short:text-[0.95rem]">
             {explanation}
           </p>
-          {service === undefined ? null : (
-            <p className="mt-2 inline-flex rounded-md bg-white px-2.5 py-1 text-sm font-bold text-asb-blue ring-1 ring-asb-blue/30 short:mt-1.5">
-              {service}
-            </p>
-          )}
         </div>
       ) : null}
     </div>
