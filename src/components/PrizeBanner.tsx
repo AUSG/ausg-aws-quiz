@@ -7,8 +7,7 @@ interface PrizeBannerProps {
 }
 
 /**
- * 스태프가 2m 밖에서 색만 보고 판단하는 영역이다.
- * 금색/초록 = 상품 지급, 회색 = 지급 없음. 숫자를 읽을 필요가 없어야 한다.
+ * 결과를 멀리서도 읽기 쉽게 강조하는 영역이다. 룰렛 참여 여부와는 무관하다.
  */
 const TONE: Record<Tier, string> = {
   perfect: 'bg-asb-orange text-black border-asb-orange',

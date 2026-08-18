@@ -3,6 +3,7 @@ dist
 dist-ssr
 coverage
 .vercel
+.wrangler/
 .env
 .env.*
 !.env.example

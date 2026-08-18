@@ -2,11 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { questions } from '../data/questions'
 import { validateBank, LIMITS } from '../data/validateBank'
 import { CATEGORIES, type Question } from '../data/types'
-import { LEAD_CATEGORY } from '../lib/pickSession'
 
 const base: Question = {
   id: 'x-01',
-  category: '컴퓨팅',
+  category: 'AUSG 기본',
   difficulty: 1,
   format: 'choice',
   prompt: '테스트 문제인가요?',
@@ -14,6 +13,7 @@ const base: Question = {
   answerIndex: 0,
   explanation: '테스트용 해설입니다.',
   hint: '테스트용 힌트입니다.',
+  sourceUrl: 'https://example.com/source',
 }
 
 describe('실제 문제 은행', () => {
@@ -21,10 +21,10 @@ describe('실제 문제 은행', () => {
     expect(validateBank(questions)).toEqual([])
   })
 
-  it('AWS 카테고리는 6문항씩, 커뮤니티는 8문항이다', () => {
-    expect(questions).toHaveLength(44)
+  it('AUSG 기본은 8문항, 나머지 카테고리는 6문항이다', () => {
+    expect(questions).toHaveLength(38)
     for (const category of CATEGORIES) {
-      const expected = category === LEAD_CATEGORY ? 8 : 6
+      const expected = category === 'AUSG 기본' ? 8 : 6
       expect(questions.filter((q) => q.category === category)).toHaveLength(expected)
     }
   })
@@ -38,11 +38,9 @@ describe('실제 문제 은행', () => {
     }
   })
 
-  // 리드 카테고리는 매 세션 1번 자리를 고정으로 가져간다. 난이도 1이 얕으면
-  // 줄 서서 앞사람 화면을 보던 사람이 같은 첫 문제를 그대로 다시 만난다.
-  it('리드 카테고리는 1번 자리를 돌릴 난이도 1 문항이 넉넉하다', () => {
-    const lead = questions.filter((q) => q.category === LEAD_CATEGORY && q.difficulty === 1)
-    expect(lead.length).toBeGreaterThanOrEqual(4)
+  it('AUSG 기본에는 입문용 난이도 1 문항이 4개 있다', () => {
+    const basics = questions.filter((q) => q.category === 'AUSG 기본' && q.difficulty === 1)
+    expect(basics).toHaveLength(4)
   })
 
   it('O/X 문항이 세션마다 한두 개 나올 만큼 섞여 있다', () => {
@@ -104,6 +102,14 @@ describe('validateBank', () => {
   it('빈 힌트를 잡아낸다', () => {
     const errors = validateBank([{ ...base, hint: '   ' }])
     expect(errors.some((e) => e.includes('힌트가 비어 있음'))).toBe(true)
+  })
+
+  it('공식 출처 URL이 없거나 HTTPS가 아니면 잡아낸다', () => {
+    const missing = validateBank([{ ...base, sourceUrl: undefined }])
+    const insecure = validateBank([{ ...base, sourceUrl: 'http://example.com/source' }])
+
+    expect(missing.some((e) => e.includes('출처 URL이 비어 있음'))).toBe(true)
+    expect(insecure.some((e) => e.includes('HTTPS여야 함'))).toBe(true)
   })
 
   it('너무 긴 힌트를 잡아낸다', () => {

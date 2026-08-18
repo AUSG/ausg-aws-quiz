@@ -1,0 +1,17 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "ausg-aws-quiz",
+	"pages_build_output_dir": "./dist",
+	"compatibility_date": "2026-08-16",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"migrations_dir": "./migrations",
+			"database_name": "ausg-quiz-prizes",
+			"database_id": "eedf6add-e92f-48e7-982e-779469d340c1"
+		}
+	]
+}

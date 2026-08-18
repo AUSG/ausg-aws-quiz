@@ -1,25 +1,19 @@
-/**
- * '커뮤니티'가 맨 앞인 건 우연이 아니다. pickSession이 이걸 리드 카테고리로
- * 삼아 매 세션 1번 문제를 여기서 뽑는다 — 부스에서 방금 AUSG·AWSKRUG를
- * 소개받은 사람이 첫 문제로 그 이야기를 다시 만나야 소개가 퀴즈로 이어진다.
- */
+/** 카테고리 순서는 출제 순서와 무관하다. pickSession이 매 세션 무작위로 섞는다. */
 export const CATEGORIES = [
-  '커뮤니티',
-  '컴퓨팅',
-  '스토리지',
-  '데이터베이스',
-  '네트워킹',
-  '보안',
-  '요금·운영',
+  'AUSG 기본',
+  'AUSG 활동',
+  'AWSKRUG 기본',
+  'AWSKRUG 활동',
+  '함께하기',
+  'AUSGCON 2026',
 ] as const
 
 export type Category = (typeof CATEGORIES)[number]
 
 /**
- * 전체 스케일은 AWS Certified Cloud Practitioner(CLF-C02) 수준이다.
- * 1 = 기본 개념 회상 — 온디맨드, 서버리스, 객체 스토리지 등
- * 2 = 서비스 식별    — 요구사항을 읽고 알맞은 서비스 고르기
- * 3 = 비교·시나리오  — Multi-AZ의 목적, 지원 플랜, stateful 여부 등
+ * 1 = 소개를 들으면 바로 풀 수 있는 기본 사실
+ * 2 = 지원 조건·활동 방식·채널을 구분하는 문항
+ * 3 = 두 커뮤니티의 관계나 활동 문화를 정확히 이해해야 하는 문항
  */
 export type Difficulty = 1 | 2 | 3
 
@@ -46,9 +40,9 @@ export interface Question {
    * validateBank가 정답 보기 문구가 그대로 들어갔는지 검사한다.
    */
   readonly hint: string
-  /** 결과 화면 복습용 서비스명. 예: 'Amazon S3' */
-  readonly service?: string
-  /** 한 세션에 같은 주제가 두 번 나오지 않게 하는 키. 예: ['s3', 'object-storage'] */
+  /** 문항 사실을 검증한 공식 자료. 화면에는 표시하지 않는다. */
+  readonly sourceUrl?: string
+  /** 한 세션에 같은 주제가 두 번 나오지 않게 하는 키. 예: ['ausg-name'] */
   readonly topics?: readonly string[]
 }
 

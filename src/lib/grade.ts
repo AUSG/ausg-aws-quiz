@@ -6,8 +6,7 @@ export interface TierCopy {
 }
 
 /**
- * 결과 화면의 등급. 스태프가 2m 밖에서 배너 색만 보고
- * 상품을 줄지 말지 판단할 수 있어야 한다.
+ * 결과 화면의 점수 축하 등급. 등급과 관계없이 모든 참가자가 룰렛을 돌린다.
  */
 export function toTier(score: number, total: number, threshold: number): Tier {
   if (total > 0 && score >= total) return 'perfect'
@@ -21,16 +20,16 @@ export function toTier(score: number, total: number, threshold: number): Tier {
  */
 export const TIER_COPY: Record<Tier, TierCopy> = {
   perfect: {
-    banner: '🎁 상품 받아가세요!',
-    message: '전부 정답이에요. 대단해요! 👏',
+    banner: '🎯 룰렛 기회 획득!',
+    message: '전부 정답이에요. 굿즈를 뽑아보세요! 👏',
   },
   prize: {
-    banner: '🎁 상품 받아가세요!',
-    message: 'AWS 감 좋으신데요? 👏',
+    banner: '🎯 룰렛 기회 획득!',
+    message: '커뮤니티를 잘 알고 계시네요. 굿즈를 뽑아보세요! 👏',
   },
   thanks: {
-    banner: '🙌 참여해주셔서 감사합니다!',
-    message: '아쉬워요, 한 번 더 도전해보세요!',
+    banner: '🙌 퀴즈 완료!',
+    message: '참여해주셔서 감사해요. 이제 굿즈를 뽑아보세요!',
   },
 }
 

@@ -1,13 +1,25 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from '../App'
 import { questions } from '../data/questions'
 import { SESSION } from '../config'
 
+beforeEach(() => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ questionCount: SESSION.questionCount }), {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    ),
+  )
+})
+
 afterEach(() => {
   cleanup()
   window.history.replaceState({}, '', '/')
+  vi.unstubAllGlobals()
 })
 
 const HINT_BUTTON = 'Codex 힌트 보기'
@@ -33,7 +45,7 @@ function currentQuestion() {
 
 async function start(user: ReturnType<typeof userEvent.setup>, search?: string) {
   renderApp(search)
-  await user.click(screen.getByRole('button', { name: '시작하기' }))
+  await user.click(await screen.findByRole('button', { name: '시작하기' }))
 }
 
 async function answerCurrent(user: ReturnType<typeof userEvent.setup>, correct: boolean) {
@@ -119,7 +131,7 @@ describe('힌트', () => {
       await user.click(screen.getByRole('button', { name: isLast ? '결과 보기' : '다음 문제' }))
     }
 
-    expect(screen.getByText(/상품 받아가세요/)).toBeInTheDocument()
+    expect(screen.getByText(/룰렛 기회 획득/)).toBeInTheDocument()
     // 힌트 사용 흔적을 결과 화면에 남기지 않는다
     expect(screen.queryByText(/힌트/)).not.toBeInTheDocument()
   })

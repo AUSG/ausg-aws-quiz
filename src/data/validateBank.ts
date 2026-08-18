@@ -75,6 +75,17 @@ export function validateBank(bank: readonly Question[]): string[] {
         errors.push(`${at} 힌트에 정답 "${answerText}"이(가) 그대로 들어 있음`)
       }
     }
+
+    if (!question.sourceUrl) {
+      errors.push(`${at} 공식 출처 URL이 비어 있음`)
+    } else {
+      try {
+        const source = new URL(question.sourceUrl)
+        if (source.protocol !== 'https:') errors.push(`${at} 출처 URL은 HTTPS여야 함`)
+      } catch {
+        errors.push(`${at} 출처 URL 형식이 잘못됨`)
+      }
+    }
   }
 
   for (const category of CATEGORIES) {

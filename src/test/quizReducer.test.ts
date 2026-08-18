@@ -14,7 +14,7 @@ import type { Question } from '../data/types'
 function makeQuestion(id: string, answerIndex = 0): Question {
   return {
     id,
-    category: '컴퓨팅',
+    category: 'AUSG 기본',
     difficulty: 1,
     format: 'choice',
     prompt: `${id} 문제인가요?`,
